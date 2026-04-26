@@ -115,19 +115,39 @@ function doLogin(){
     var found=USERS.find(function(x){return (x.username===u||x.email===u)&&x.password===p;});
     if(found){
       currentUser=found;
+      var savedProfile=localStorage.getItem('profile_'+found.username);
+      if(savedProfile){
+        var saved=JSON.parse(savedProfile);
+        currentUser.name=saved.name||found.name;
+        currentUser.email=saved.email||found.email;
+        currentUser.dept=saved.dept||'';
+        currentUser.eid=saved.eid||'';
+        currentUser.phone=saved.phone||'';
+        currentUser.profilePicture=saved.profilePicture||'';
+      }
       document.getElementById('loginScreen').classList.add('hidden');
       document.getElementById('appShell').classList.remove('app-hidden');
-      document.getElementById('sb-name').textContent=found.name;
+      document.getElementById('sb-name').textContent=currentUser.name;
       document.getElementById('sb-role').textContent=found.role;
-      document.getElementById('sb-av-initials').textContent=found.name.split(' ').map(function(w){return w[0];}).join('').slice(0,2).toUpperCase();
+      document.getElementById('sb-av-initials').textContent=currentUser.name.split(' ').map(function(w){return w[0];}).join('').slice(0,2).toUpperCase();
+      if(currentUser.profilePicture){
+        document.querySelector('.sb-av').style.backgroundImage='url('+currentUser.profilePicture+')';
+        document.querySelector('.sb-av').textContent='';
+      }
       initApp();
-      toast('Welcome back, '+found.name.split(' ')[0]+'!','ok');
+      toast('Welcome back, '+currentUser.name.split(' ')[0]+'!','ok');
     } else {
       authErr('loginErr','Incorrect username/email or password.');
       document.getElementById('loginPass').value='';
     }
     btn.disabled=false; btn.textContent='Sign In';
   },400);
+}
+
+function demoLogin(){
+  document.getElementById('loginUser').value='hfavenir';
+  document.getElementById('loginPass').value='uphsd2026';
+  setTimeout(function(){doLogin();},100);
 }
 
 function doLogout(){
@@ -976,7 +996,7 @@ function renderProfile(){
   var u=currentUser;
   var initials=u.name.split(' ').map(function(w){return w[0];}).join('').slice(0,2).toUpperCase();
   document.getElementById('profile-header').innerHTML=
-    '<div class="profile-av-lg">'+initials+'</div>'
+    '<div class="profile-av-lg" '+(u.profilePicture?'style="background-image:url('+u.profilePicture+');background-size:cover;background-position:center"':'')+'>'+(u.profilePicture?'':initials)+'</div>'
     +'<div class="profile-info">'
     +'<h2>'+u.name+'</h2><p>'+u.role+' · '+(u.dept||'CCS')+'</p>'
     +'<div class="profile-stats">'
@@ -989,6 +1009,9 @@ function renderProfile(){
   document.getElementById('pf-dept').value=u.dept||'';
   document.getElementById('pf-eid').value=u.eid||'';
   document.getElementById('pf-phone').value=u.phone||'';
+  if(u.profilePicture){
+    document.getElementById('profileUploadPreview').innerHTML='<img src="'+u.profilePicture+'" />';
+  }
   document.getElementById('pf-courses-list').innerHTML=DB.courses.map(function(c){
     return '<div style="padding:8px 10px;background:var(--surface2);border-radius:8px;margin-bottom:6px;font-size:12.5px"><strong>'+c.code+'</strong> — '+c.name+'<br><span style="font-size:11px;color:var(--text3)">'+c.section+' · '+c.sched+'</span></div>';
   }).join('');
@@ -1000,6 +1023,8 @@ function saveProfile(){
   currentUser.dept=document.getElementById('pf-dept').value.trim();
   currentUser.eid=document.getElementById('pf-eid').value.trim();
   currentUser.phone=document.getElementById('pf-phone').value.trim();
+  var profileData={name:currentUser.name,email:currentUser.email,dept:currentUser.dept,eid:currentUser.eid,phone:currentUser.phone,profilePicture:currentUser.profilePicture};
+  localStorage.setItem('profile_'+currentUser.username,JSON.stringify(profileData));
   document.getElementById('sb-name').textContent=currentUser.name;
   document.getElementById('sb-role').textContent=currentUser.role;
   document.getElementById('sb-av-initials').textContent=currentUser.name.split(' ').map(function(w){return w[0];}).join('').slice(0,2).toUpperCase();
@@ -1017,6 +1042,26 @@ function changePassword(){
   currentUser.password=np;
   ['pf-cpw','pf-npw','pf-cpw2'].forEach(function(id){document.getElementById(id).value='';});
   toast('Password changed successfully!','ok');
+}
+function handleProfileUpload(e){
+  var f=e.target.files[0]||e.dataTransfer.files[0];
+  if(!f)return;
+  if(f.size>5242880){toast('File is too large (max 5MB)','err');return;}
+  if(!f.type.startsWith('image/')){
+    toast('Please upload an image file','err');return;
+  }
+  var r=new FileReader();
+  r.onload=function(event){
+    currentUser.profilePicture=event.target.result;
+    var profileData={name:currentUser.name,email:currentUser.email,dept:currentUser.dept,eid:currentUser.eid,phone:currentUser.phone,profilePicture:event.target.result};
+    localStorage.setItem('profile_'+currentUser.username,JSON.stringify(profileData));
+    document.querySelector('.sb-av').style.backgroundImage='url('+event.target.result+')';
+    document.querySelector('.sb-av').textContent='';
+    document.getElementById('profileUploadPreview').innerHTML='<img src="'+event.target.result+'" />';
+    renderProfile();
+    toast('Profile picture updated!','ok');
+  };
+  r.readAsDataURL(f);
 }
 
 // ================================================================
