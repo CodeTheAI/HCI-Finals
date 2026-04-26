@@ -72,6 +72,19 @@ var DB={
 var currentCourseIdx=0;
 var calYear=2026, calMonth=3; // April 2026 (0-indexed)
 
+function isAdminUser(){
+  return !!(currentUser && /admin/i.test(currentUser.role||''));
+}
+
+function applyRoleUI(){
+  var sub=document.getElementById('pgSub');
+  if(sub){
+    sub.textContent=isAdminUser()
+      ? 'UPHSD Administration Portal · S.Y. 2025–2026'
+      : 'UPHSD College of Computer Studies · S.Y. 2025–2026';
+  }
+}
+
 // ================================================================
 // INIT PARTICLES
 // ================================================================
@@ -110,6 +123,14 @@ function doLogin(){
   document.getElementById('loginErr').classList.remove('show');
   document.getElementById('loginOk').classList.remove('show');
   if(!u||!p){authErr('loginErr','Please fill in all fields.');return;}
+  
+  // Check for admin login first
+  if(u === 'admin' && p === 'admin123'){
+    currentAdminUser = { username: 'admin', role: 'admin' };
+    showAdminPanel();
+    return;
+  }
+  
   btn.disabled=true; btn.textContent='Signing in…';
   setTimeout(function(){
     var found=USERS.find(function(x){return (x.username===u||x.email===u)&&x.password===p;});
@@ -254,6 +275,7 @@ function doResetPassword(){
 // APP INIT
 // ================================================================
 function initApp(){
+  applyRoleUI();
   renderSidebarSchedule();
   renderDashboard();
   renderCourses();
@@ -297,6 +319,17 @@ function renderSidebarSchedule(){
 // DASHBOARD
 // ================================================================
 function renderDashboard(){
+  var facultyView=document.getElementById('faculty-dashboard-view');
+  var adminView=document.getElementById('admin-dashboard-view');
+  if(isAdminUser()){
+    if(facultyView) facultyView.style.display='none';
+    if(adminView) adminView.style.display='block';
+    renderAdminDashboard();
+    return;
+  }
+  if(facultyView) facultyView.style.display='block';
+  if(adminView) adminView.style.display='none';
+
   var totalStudents=0, totalGrade=0, gradeCount=0, passing=0, courses=DB.courses.length;
   DB.courses.forEach(function(course){
     totalStudents+=course.students.length;
@@ -338,6 +371,120 @@ function renderDashboard(){
       +'</div></div>';
   });
   document.getElementById('dash-courses-list').innerHTML=cl||'<div class="empty">No courses yet.</div>';
+}
+
+function renderAdminDashboard(){
+  var facultyCount=USERS.filter(function(u){
+    return /faculty/i.test(u.role||'');
+  }).length;
+  var totalCourses=DB.courses.length;
+  var totalStudents=DB.students.length;
+  var allGrades=[];
+
+  DB.courses.forEach(function(c){
+    c.students.forEach(function(s){
+      allGrades.push(compute(s,c.weeks).grade);
+    });
+  });
+  var overallAvg=allGrades.length?Math.round(allGrades.reduce(function(a,b){return a+b;},0)/allGrades.length):0;
+  var activeEvents=DB.events.filter(function(e){
+    return new Date(e.date)>=new Date(new Date().setHours(0,0,0,0));
+  }).length;
+
+  document.getElementById('admin-stats').innerHTML=
+    stat('Registered Faculty',facultyCount,'Active accounts',Math.min(100,facultyCount*20))
+    +stat('Total Students',totalStudents,'Institution-wide',Math.min(100,totalStudents*4))
+    +stat('Total Courses',totalCourses,'Current term',Math.min(100,totalCourses*10))
+    +stat('Overall Average',overallAvg,'Across all classes',overallAvg)
+    +stat('Active Events',activeEvents,'Upcoming deadlines',Math.min(100,activeEvents*20));
+
+  var depts={};
+  DB.courses.forEach(function(c){
+    var key='General Education';
+    if(/^IT/i.test(c.code)) key='Information Technology';
+    else if(/^CS/i.test(c.code)) key='Computer Science';
+
+    if(!depts[key]) depts[key]={courses:0,students:0,gradeTotal:0,gradeCount:0};
+    depts[key].courses++;
+    depts[key].students+=c.students.length;
+    c.students.forEach(function(s){
+      depts[key].gradeTotal+=compute(s,c.weeks).grade;
+      depts[key].gradeCount++;
+    });
+  });
+
+  var deptInsights='';
+  Object.keys(depts).forEach(function(name){
+    var d=depts[name];
+    var avgGrade=d.gradeCount?Math.round(d.gradeTotal/d.gradeCount):0;
+    var tone=avgGrade>=85?'var(--green)':avgGrade>=75?'var(--accent)':'var(--amber)';
+    deptInsights+='<div class="perf-bar">'
+      +'<div class="perf-bar-label"><span>'+name+'</span><span style="font-weight:700;color:'+tone+'">'+avgGrade+'</span></div>'
+      +'<div class="perf-bar-track"><div class="perf-bar-fill" style="width:'+Math.min(100,avgGrade)+'%;background:'+tone+'"></div></div>'
+      +'</div>';
+  });
+  document.getElementById('admin-dept-insights').innerHTML=deptInsights||'<div class="empty">No department data yet.</div>';
+
+  var deptStatus='';
+  Object.keys(depts).forEach(function(name){
+    var d=depts[name];
+    deptStatus+='<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--surface2);border-radius:8px;margin-bottom:6px">'
+      +'<div><div style="font-size:12.5px;font-weight:700;color:var(--text)">'+name+'</div><div style="font-size:11px;color:var(--text3)">'+d.courses+' courses · '+d.students+' students</div></div>'
+      +'<button class="btn btn-sm btn-primary" onclick="goPage(\'courses\',document.getElementById(\'nav-courses\'))">Manage</button>'
+      +'</div>';
+  });
+  document.getElementById('admin-dept-status').innerHTML=deptStatus||'<div class="empty">No departments available.</div>';
+
+  var alerts=[];
+  DB.courses.forEach(function(course){
+    course.students.forEach(function(s){
+      var c=compute(s,course.weeks);
+      if(c.attPct<75){
+        alerts.push({sev:'High',msg:s.ln+', '+s.fn+' has low attendance ('+c.attPct+'%) in '+course.code});
+      }
+      if(c.grade<75){
+        alerts.push({sev:'Medium',msg:s.ln+', '+s.fn+' is below passing ('+c.grade+') in '+course.code});
+      }
+    });
+  });
+  var now=new Date();
+  now.setHours(0,0,0,0);
+  DB.events.forEach(function(e){
+    var days=Math.ceil((new Date(e.date)-now)/(1000*60*60*24));
+    if(days>=0&&days<=7){
+      alerts.push({sev:'Info',msg:e.title+' is due in '+days+' day(s)'});
+    }
+  });
+  var alertHtml='';
+  alerts.slice(0,8).forEach(function(a){
+    var cls=a.sev==='High'?'bg-red':a.sev==='Medium'?'bg-amber':'bg-blue';
+    alertHtml+='<div style="display:flex;gap:8px;align-items:flex-start;padding:9px 10px;background:var(--surface2);border-radius:8px;margin-bottom:6px">'
+      +'<span class="badge '+cls+'">'+a.sev+'</span>'
+      +'<div style="font-size:12px;color:var(--text2)">'+a.msg+'</div>'
+      +'</div>';
+  });
+  document.getElementById('admin-alerts').innerHTML=alertHtml||'<div class="empty">No active alerts.</div>';
+
+  var deadlines=DB.events
+    .slice()
+    .sort(function(a,b){return new Date(a.date)-new Date(b.date);})
+    .filter(function(e){return new Date(e.date)>=now;})
+    .slice(0,6);
+  var dHtml='';
+  deadlines.forEach(function(e){
+    var ds=new Date(e.date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    dHtml+='<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 10px;background:var(--surface2);border-radius:8px;margin-bottom:6px">'
+      +'<div><div style="font-size:12.5px;font-weight:700;color:var(--text)">'+e.title+'</div><div style="font-size:11px;color:var(--text3)">'+(e.desc||'Academic calendar')+'</div></div>'
+      +'<span class="badge bg-blue">'+ds+'</span>'
+      +'</div>';
+  });
+  document.getElementById('admin-deadlines').innerHTML=dHtml||'<div class="empty">No upcoming deadlines.</div>';
+
+  document.getElementById('admin-actions').innerHTML=
+    '<button class="btn btn-primary btn-sm" onclick="openAddCourse()">+ Add Course</button>'
+    +'<button class="btn btn-sm" onclick="openAddEvent()">+ Create Event</button>'
+    +'<button class="btn btn-sm" onclick="goPage(\'students\',document.getElementById(\'nav-students\'))">Review Students</button>'
+    +'<button class="btn btn-sm" onclick="goPage(\'gmail\',document.getElementById(\'nav-gmail\'))">Send Advisory</button>';
 }
 function stat(lbl,val,sub,pct){
   return '<div class="stat"><div class="stat-lbl">'+lbl+'</div><div class="stat-val">'+val+'</div><div class="stat-sub">'+sub+'</div>'
@@ -1121,7 +1268,8 @@ function goPage(id,el){
   document.querySelectorAll('.sb-item').forEach(function(n){n.classList.remove('active');});
   document.getElementById('pg-'+id).classList.add('active');
   if(el) el.classList.add('active');
-  document.getElementById('pgTitle').textContent=pageTitles[id]||id;
+  var title=(id==='dashboard'&&isAdminUser())?'Admin Dashboard':(pageTitles[id]||id);
+  document.getElementById('pgTitle').textContent=title;
   if(id==='dashboard') renderDashboard();
   if(id==='courses'){renderCourses();}
   if(id==='students'){renderStudentsPage();}
@@ -1294,4 +1442,715 @@ function exportStudents(){
   a.download='students_'+new Date().toISOString().slice(0,10)+'.csv';
   a.click();
   toast('✓ Exported '+filtered.length+' student(s) to CSV','ok');
+}
+ 
+// ================================================================ ADMIN FUNCTIONS ================================================================
+ 
+let currentAdminUser = null;
+let adminData = {
+  faculty: [],
+  students: [],
+  courses: [],
+  enrollments: [],
+  designations: []
+};
+ 
+// Show admin panel
+function showAdminPanel() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('adminDashboard').classList.remove('app-hidden');
+  loadAdminData();
+  updateDashboardStats();
+  switchAdminView('dashboard');
+}
+ 
+// Switch between admin views
+function switchAdminView(viewName) {
+  // Hide all views
+  const views = document.querySelectorAll('.admin-view');
+  views.forEach(view => view.classList.remove('active'));
+ 
+  // Show selected view
+  document.getElementById('view-' + viewName).classList.add('active');
+ 
+  // Update nav items
+  const navItems = document.querySelectorAll('.admin-nav-item');
+  navItems.forEach(item => item.classList.remove('active'));
+  event.target.closest('.admin-nav-item').classList.add('active');
+ 
+  // Load data for specific views
+  if (viewName === 'faculty') {
+    loadFacultyList();
+  } else if (viewName === 'students') {
+    loadStudentList();
+  } else if (viewName === 'enrollment') {
+    loadEnrollmentData();
+  } else if (viewName === 'designation') {
+    loadDesignationData();
+  } else if (viewName === 'curriculum') {
+    loadCurriculumList();
+  }
+}
+ 
+// ================================================================ FACULTY MANAGEMENT ================================================================
+ 
+function openFacultyModal(action) {
+  const modal = document.getElementById('facultyModal');
+  const form = document.getElementById('facultyForm');
+  const detailView = document.getElementById('facultyDetailView');
+ 
+  if (action === 'add') {
+    document.getElementById('facultyModalTitle').textContent = 'Add Faculty';
+    form.style.display = 'block';
+    detailView.style.display = 'none';
+    form.reset();
+    document.getElementById('facultyId').value = 'FAC' + Date.now();
+  }
+ 
+  modal.classList.add('show');
+}
+ 
+function closeFacultyModal() {
+  document.getElementById('facultyModal').classList.remove('show');
+}
+ 
+function saveFaculty(event) {
+  event.preventDefault();
+ 
+  const faculty = {
+    id: document.getElementById('facultyId').value,
+    name: document.getElementById('facultyName').value,
+    email: document.getElementById('facultyEmail').value,
+    department: document.getElementById('facultyDept').value,
+    courses: []
+  };
+ 
+  adminData.faculty.push(faculty);
+  closeFacultyModal();
+  loadFacultyList();
+  updateDashboardStats();
+}
+ 
+function loadFacultyList() {
+  const tbody = document.getElementById('facultyTableBody');
+  tbody.innerHTML = '';
+ 
+  adminData.faculty.forEach(faculty => {
+    const coursesCount = faculty.courses ? faculty.courses.length : 0;
+    const row = `
+<tr>
+<td>${faculty.id}</td>
+<td>${faculty.name}</td>
+<td>${faculty.department}</td>
+<td>${faculty.email}</td>
+<td>${coursesCount} courses</td>
+<td>
+<div class="action-buttons">
+<button class="action-btn view" onclick="viewFacultyDetail('${faculty.id}')">View</button>
+<button class="action-btn edit" onclick="editFaculty('${faculty.id}')">Edit</button>
+<button class="action-btn delete" onclick="deleteFacultyItem('${faculty.id}')">Delete</button>
+</div>
+</td>
+</tr>
+    `;
+    tbody.innerHTML += row;
+  });
+}
+ 
+function viewFacultyDetail(facultyId) {
+  const faculty = adminData.faculty.find(f => f.id === facultyId);
+  if (!faculty) return;
+ 
+  const modal = document.getElementById('facultyModal');
+  const form = document.getElementById('facultyForm');
+  const detailView = document.getElementById('facultyDetailView');
+ 
+  form.style.display = 'none';
+  detailView.style.display = 'block';
+ 
+  document.getElementById('detailFacultyName').textContent = faculty.name;
+  document.getElementById('detailFacultyEmail').textContent = faculty.email;
+  document.getElementById('detailFacultyDept').textContent = faculty.department;
+ 
+  // Load assigned courses
+  const coursesTable = document.getElementById('facultyCoursesTable');
+  coursesTable.innerHTML = '';
+  if (faculty.courses && faculty.courses.length > 0) {
+    faculty.courses.forEach(courseId => {
+      const course = adminData.courses.find(c => c.id === courseId);
+      if (course) {
+        const row = `
+<tr>
+<td>${course.code}</td>
+<td>${course.name}</td>
+<td>${course.section || 'A'}</td>
+<td>${course.students || 0}</td>
+</tr>
+        `;
+        coursesTable.innerHTML += row;
+      }
+    });
+  }
+ 
+  modal.classList.add('show');
+}
+ 
+function editFaculty(facultyId) {
+  const faculty = adminData.faculty.find(f => f.id === facultyId);
+  if (!faculty) return;
+ 
+  const form = document.getElementById('facultyForm');
+  const detailView = document.getElementById('facultyDetailView');
+ 
+  detailView.style.display = 'none';
+  form.style.display = 'block';
+ 
+  document.getElementById('facultyId').value = faculty.id;
+  document.getElementById('facultyName').value = faculty.name;
+  document.getElementById('facultyEmail').value = faculty.email;
+  document.getElementById('facultyDept').value = faculty.department;
+}
+ 
+function editFacultyForm() {
+  const facultyId = document.getElementById('facultyId').value;
+  editFaculty(facultyId);
+}
+ 
+function deleteFaculty() {
+  const facultyId = document.getElementById('facultyId').value;
+  deleteFacultyItem(facultyId);
+}
+ 
+function deleteFacultyItem(facultyId) {
+  if (confirm('Are you sure you want to delete this faculty?')) {
+    adminData.faculty = adminData.faculty.filter(f => f.id !== facultyId);
+    loadFacultyList();
+    updateDashboardStats();
+  }
+}
+ 
+function filterFaculty() {
+  const searchTerm = document.getElementById('facultySearch').value.toLowerCase();
+  const tbody = document.getElementById('facultyTableBody');
+  const rows = tbody.querySelectorAll('tr');
+ 
+  rows.forEach(row => {
+    const text = row.textContent.toLowerCase();
+    row.style.display = text.includes(searchTerm) ? '' : 'none';
+  });
+}
+ 
+// ================================================================ STUDENT MANAGEMENT ================================================================
+ 
+function openStudentModal(action) {
+  const modal = document.getElementById('studentModal');
+  const form = document.getElementById('studentForm');
+  const detailView = document.getElementById('studentDetailView');
+ 
+  if (action === 'add') {
+    document.getElementById('studentModalTitle').textContent = 'Add Student';
+    form.style.display = 'block';
+    detailView.style.display = 'none';
+    form.reset();
+    document.getElementById('studentId').value = 'STU' + Date.now();
+  }
+ 
+  modal.classList.add('show');
+}
+ 
+function closeStudentModal() {
+  document.getElementById('studentModal').classList.remove('show');
+}
+ 
+function saveStudent(event) {
+  event.preventDefault();
+ 
+  const student = {
+    id: document.getElementById('studentId').value,
+    name: document.getElementById('studentName').value,
+    email: document.getElementById('studentEmail').value,
+    phone: document.getElementById('studentPhone').value,
+    department: document.getElementById('studentDept').value,
+    yearLevel: document.getElementById('studentYear').value,
+    enrollments: []
+  };
+ 
+  adminData.students.push(student);
+  closeStudentModal();
+  loadStudentList();
+  updateDashboardStats();
+}
+ 
+function loadStudentList() {
+  const tbody = document.getElementById('studentTableBody');
+  tbody.innerHTML = '';
+ 
+  adminData.students.forEach(student => {
+    const enrollmentCount = student.enrollments ? student.enrollments.length : 0;
+    const row = `
+<tr>
+<td>${student.id}</td>
+<td>${student.name}</td>
+<td>${student.department}</td>
+<td>${student.yearLevel} Year</td>
+<td>${student.email}</td>
+<td>${enrollmentCount} courses</td>
+<td>
+<div class="action-buttons">
+<button class="action-btn view" onclick="viewStudentDetail('${student.id}')">View</button>
+<button class="action-btn edit" onclick="editStudent('${student.id}')">Edit</button>
+<button class="action-btn delete" onclick="deleteStudentItem('${student.id}')">Delete</button>
+</div>
+</td>
+</tr>
+    `;
+    tbody.innerHTML += row;
+  });
+}
+ 
+function viewStudentDetail(studentId) {
+  const student = adminData.students.find(s => s.id === studentId);
+  if (!student) return;
+ 
+  const modal = document.getElementById('studentModal');
+  const form = document.getElementById('studentForm');
+  const detailView = document.getElementById('studentDetailView');
+ 
+  form.style.display = 'none';
+  detailView.style.display = 'block';
+ 
+  document.getElementById('detailStudentName').textContent = student.name;
+  document.getElementById('detailStudentEmail').textContent = student.email;
+  document.getElementById('detailStudentDept').textContent = student.department;
+  document.getElementById('detailStudentYear').textContent = student.yearLevel + ' Year';
+ 
+  // Load enrolled courses
+  const coursesTable = document.getElementById('studentCoursesTable');
+  coursesTable.innerHTML = '';
+  if (student.enrollments && student.enrollments.length > 0) {
+    student.enrollments.forEach(enrollmentId => {
+      const enrollment = adminData.enrollments.find(e => e.id === enrollmentId);
+      if (enrollment) {
+        const course = adminData.courses.find(c => c.id === enrollment.courseId);
+        const faculty = adminData.faculty.find(f => f.id === enrollment.facultyId);
+        if (course) {
+          const row = `
+<tr>
+<td>${course.code}</td>
+<td>${course.name}</td>
+<td>${faculty ? faculty.name : 'TBA'}</td>
+<td>${enrollment.section || 'A'}</td>
+<td>${enrollment.grade || 'INC'}</td>
+</tr>
+          `;
+          coursesTable.innerHTML += row;
+        }
+      }
+    });
+  }
+ 
+  modal.classList.add('show');
+}
+ 
+function editStudent(studentId) {
+  const student = adminData.students.find(s => s.id === studentId);
+  if (!student) return;
+ 
+  const form = document.getElementById('studentForm');
+  const detailView = document.getElementById('studentDetailView');
+ 
+  detailView.style.display = 'none';
+  form.style.display = 'block';
+ 
+  document.getElementById('studentId').value = student.id;
+  document.getElementById('studentName').value = student.name;
+  document.getElementById('studentEmail').value = student.email;
+  document.getElementById('studentPhone').value = student.phone;
+  document.getElementById('studentDept').value = student.department;
+  document.getElementById('studentYear').value = student.yearLevel;
+}
+ 
+function editStudentForm() {
+  const studentId = document.getElementById('studentId').value;
+  editStudent(studentId);
+}
+ 
+function deleteStudent() {
+  const studentId = document.getElementById('studentId').value;
+  deleteStudentItem(studentId);
+}
+ 
+function deleteStudentItem(studentId) {
+  if (confirm('Are you sure you want to delete this student?')) {
+    adminData.students = adminData.students.filter(s => s.id !== studentId);
+    loadStudentList();
+    updateDashboardStats();
+  }
+}
+ 
+function filterStudents() {
+  const searchTerm = document.getElementById('studentSearch').value.toLowerCase();
+  const deptFilter = document.getElementById('departmentFilter').value;
+  const yearFilter = document.getElementById('yearFilter').value;
+  const tbody = document.getElementById('studentTableBody');
+  const rows = tbody.querySelectorAll('tr');
+ 
+  rows.forEach(row => {
+    const text = row.textContent.toLowerCase();
+    const deptCell = row.cells[2]?.textContent || '';
+    const yearCell = row.cells[3]?.textContent || '';
+ 
+    const matchesSearch = text.includes(searchTerm);
+    const matchesDept = !deptFilter || deptCell.includes(deptFilter);
+    const matchesYear = !yearFilter || yearCell.includes(yearFilter + ' Year');
+ 
+    row.style.display = matchesSearch && matchesDept && matchesYear ? '' : 'none';
+  });
+}
+ 
+// ================================================================ ENROLLMENT MANAGEMENT ================================================================
+ 
+function openEnrollmentModal() {
+  const modal = document.getElementById('enrollmentModal');
+  const select = document.getElementById('enrollmentStudent');
+ 
+  // Populate student dropdown
+  select.innerHTML = '<option value="">Select Student</option>';
+  adminData.students.forEach(student => {
+    const option = document.createElement('option');
+    option.value = student.id;
+    option.textContent = `${student.name} (${student.id})`;
+    select.appendChild(option);
+  });
+ 
+  modal.classList.add('show');
+}
+ 
+function closeEnrollmentModal() {
+  document.getElementById('enrollmentModal').classList.remove('show');
+}
+ 
+function updateAvailableCourses() {
+  const studentId = document.getElementById('enrollmentStudent').value;
+  const courseSelect = document.getElementById('enrollmentCourse');
+ 
+  courseSelect.innerHTML = '<option value="">Select Course</option>';
+  adminData.courses.forEach(course => {
+    const option = document.createElement('option');
+    option.value = course.id;
+    option.textContent = `${course.code} - ${course.name}`;
+    courseSelect.appendChild(option);
+  });
+}
+ 
+function updateSections() {
+  const courseId = document.getElementById('enrollmentCourse').value;
+  const sectionSelect = document.getElementById('enrollmentSection');
+ 
+  sectionSelect.innerHTML = '<option value="">Select Section</option>';
+  const sections = ['A', 'B', 'C', 'D'];
+  sections.forEach(section => {
+    const option = document.createElement('option');
+    option.value = section;
+    option.textContent = `Section ${section}`;
+    sectionSelect.appendChild(option);
+  });
+}
+ 
+function saveEnrollment(event) {
+  event.preventDefault();
+ 
+  const enrollment = {
+    id: 'ENR' + Date.now(),
+    studentId: document.getElementById('enrollmentStudent').value,
+    courseId: document.getElementById('enrollmentCourse').value,
+    section: document.getElementById('enrollmentSection').value,
+    status: 'enrolled'
+  };
+ 
+  adminData.enrollments.push(enrollment);
+ 
+  // Add to student's enrollments
+  const student = adminData.students.find(s => s.id === enrollment.studentId);
+  if (student) {
+    if (!student.enrollments) student.enrollments = [];
+    student.enrollments.push(enrollment.id);
+  }
+ 
+  closeEnrollmentModal();
+  loadEnrollmentData();
+  updateDashboardStats();
+}
+ 
+function loadEnrollmentData() {
+  const container = document.getElementById('enrollmentByCourseContainer');
+  container.innerHTML = '';
+ 
+  adminData.courses.forEach(course => {
+    const courseEnrollments = adminData.enrollments.filter(e => e.courseId === course.id);
+ 
+    const card = document.createElement('div');
+    card.className = 'course-card';
+    card.innerHTML = `
+<div class="course-header">
+<h3>${course.code}</h3>
+<p>${course.name}</p>
+</div>
+<div class="course-body">
+<p><strong>Total Enrolled:</strong> ${courseEnrollments.length}</p>
+<ul class="section-list">
+${['A', 'B', 'C'].map(section => {
+  const sectionEnrollments = courseEnrollments.filter(e => e.section === section);
+  return `<li class="section-item">Section ${section}: ${sectionEnrollments.length} students</li>`;
+}).join('')}
+</ul>
+</div>
+    `;
+    container.appendChild(card);
+  });
+}
+ 
+function filterEnrollments() {
+  // Add filter logic here
+}
+ 
+// ================================================================ DESIGNATION MANAGEMENT ================================================================
+ 
+function openDesignationModal() {
+  const modal = document.getElementById('designationModal');
+  const select = document.getElementById('designationFaculty');
+ 
+  // Populate faculty dropdown
+  select.innerHTML = '<option value="">Select Faculty</option>';
+  adminData.faculty.forEach(faculty => {
+    const option = document.createElement('option');
+    option.value = faculty.id;
+    option.textContent = `${faculty.name} (${faculty.id})`;
+    select.appendChild(option);
+  });
+ 
+  modal.classList.add('show');
+}
+ 
+function closeDesignationModal() {
+  document.getElementById('designationModal').classList.remove('show');
+}
+ 
+function updateDesignationSections() {
+  const courseId = document.getElementById('designationCourse').value;
+  const sectionSelect = document.getElementById('designationSection');
+ 
+  sectionSelect.innerHTML = '<option value="">Select Section</option>';
+  const sections = ['A', 'B', 'C', 'D'];
+  sections.forEach(section => {
+    const option = document.createElement('option');
+    option.value = section;
+    option.textContent = `Section ${section}`;
+    sectionSelect.appendChild(option);
+  });
+}
+ 
+function saveDesignation(event) {
+  event.preventDefault();
+ 
+  const designation = {
+    id: 'DES' + Date.now(),
+    facultyId: document.getElementById('designationFaculty').value,
+    courseId: document.getElementById('designationCourse').value,
+    section: document.getElementById('designationSection').value,
+    status: 'assigned'
+  };
+ 
+  adminData.designations.push(designation);
+ 
+  // Add to faculty's courses
+  const faculty = adminData.faculty.find(f => f.id === designation.facultyId);
+  if (faculty) {
+    if (!faculty.courses) faculty.courses = [];
+    faculty.courses.push(designation.courseId);
+  }
+ 
+  closeDesignationModal();
+  loadDesignationData();
+  updateDashboardStats();
+}
+ 
+function loadDesignationData() {
+  const container = document.getElementById('designationByCourseContainer');
+  container.innerHTML = '';
+ 
+  adminData.courses.forEach(course => {
+    const courseDesignations = adminData.designations.filter(d => d.courseId === course.id);
+ 
+    const card = document.createElement('div');
+    card.className = 'course-card';
+    card.innerHTML = `
+<div class="course-header">
+<h3>${course.code}</h3>
+<p>${course.name}</p>
+</div>
+<div class="course-body">
+<p><strong>Assigned Faculty:</strong> ${courseDesignations.length}</p>
+<ul class="section-list">
+${courseDesignations.map(des => {
+  const faculty = adminData.faculty.find(f => f.id === des.facultyId);
+  return `<li class="section-item">Section ${des.section}: ${faculty ? faculty.name : 'TBA'}</li>`;
+}).join('')}
+</ul>
+</div>
+    `;
+    container.appendChild(card);
+  });
+}
+ 
+function filterDesignations() {
+  // Add filter logic here
+}
+ 
+// ================================================================ CURRICULUM MANAGEMENT ================================================================
+ 
+function openCurriculumModal(action) {
+  const modal = document.getElementById('curriculumModal');
+  const form = document.getElementById('curriculumForm');
+ 
+  if (action === 'add') {
+    document.getElementById('curriculumModalTitle').textContent = 'Add Course';
+    form.reset();
+  }
+ 
+  modal.classList.add('show');
+}
+ 
+function closeCurriculumModal() {
+  document.getElementById('curriculumModal').classList.remove('show');
+}
+ 
+function saveCurriculum(event) {
+  event.preventDefault();
+ 
+  const course = {
+    id: 'CRS' + Date.now(),
+    code: document.getElementById('courseCode').value,
+    name: document.getElementById('courseName').value,
+    department: document.getElementById('courseDept').value,
+    yearLevel: document.getElementById('courseYear').value,
+    units: document.getElementById('courseUnits').value,
+    description: document.getElementById('courseDescription').value
+  };
+ 
+  adminData.courses.push(course);
+  closeCurriculumModal();
+  loadCurriculumList();
+  updateDashboardStats();
+}
+ 
+function loadCurriculumList() {
+  const tbody = document.getElementById('curriculumTableBody');
+  tbody.innerHTML = '';
+ 
+  adminData.courses.forEach(course => {
+    const row = `
+<tr>
+<td>${course.code}</td>
+<td>${course.name}</td>
+<td>${course.department}</td>
+<td>${course.yearLevel} Year</td>
+<td>${course.units} units</td>
+<td>${course.description || '-'}</td>
+<td>
+<div class="action-buttons">
+<button class="action-btn edit" onclick="editCurriculum('${course.id}')">Edit</button>
+<button class="action-btn delete" onclick="deleteCourse('${course.id}')">Delete</button>
+</div>
+</td>
+</tr>
+    `;
+    tbody.innerHTML += row;
+  });
+}
+ 
+function editCurriculum(courseId) {
+  const course = adminData.courses.find(c => c.id === courseId);
+  if (!course) return;
+ 
+  document.getElementById('courseCode').value = course.code;
+  document.getElementById('courseName').value = course.name;
+  document.getElementById('courseDept').value = course.department;
+  document.getElementById('courseYear').value = course.yearLevel;
+  document.getElementById('courseUnits').value = course.units;
+  document.getElementById('courseDescription').value = course.description;
+ 
+  document.getElementById('curriculumModalTitle').textContent = 'Edit Course';
+  document.getElementById('curriculumModal').classList.add('show');
+}
+ 
+function deleteCourse(courseId) {
+  if (confirm('Are you sure you want to delete this course?')) {
+    adminData.courses = adminData.courses.filter(c => c.id !== courseId);
+    loadCurriculumList();
+    updateDashboardStats();
+  }
+}
+ 
+function filterCurriculum() {
+  const deptFilter = document.getElementById('curriculumDeptFilter').value;
+  const yearFilter = document.getElementById('curriculumYearFilter').value;
+  const tbody = document.getElementById('curriculumTableBody');
+  const rows = tbody.querySelectorAll('tr');
+ 
+  rows.forEach(row => {
+    const deptCell = row.cells[2]?.textContent || '';
+    const yearCell = row.cells[3]?.textContent || '';
+ 
+    const matchesDept = !deptFilter || deptCell.includes(deptFilter);
+    const matchesYear = !yearFilter || yearCell.includes(yearFilter);
+ 
+    row.style.display = matchesDept && matchesYear ? '' : 'none';
+  });
+}
+ 
+// ================================================================ DASHBOARD & UTILITY ================================================================
+ 
+function updateDashboardStats() {
+  document.getElementById('totalFaculty').textContent = adminData.faculty.length;
+  document.getElementById('totalStudents').textContent = adminData.students.length;
+  document.getElementById('totalCourses').textContent = adminData.courses.length;
+  document.getElementById('totalEnrollments').textContent = adminData.enrollments.length;
+}
+ 
+function loadAdminData() {
+  // Initialize with sample data (replace with actual database calls)
+  if (adminData.courses.length === 0) {
+    adminData.courses = [
+      {
+        id: 'CRS001',
+        code: 'CS101',
+        name: 'Introduction to Computer Science',
+        department: 'CS',
+        yearLevel: '1',
+        units: 3,
+        description: 'Fundamentals of CS'
+      },
+      {
+        id: 'CRS002',
+        code: 'IT101',
+        name: 'Introduction to IT',
+        department: 'IT',
+        yearLevel: '1',
+        units: 3,
+        description: 'Fundamentals of IT'
+      }
+    ];
+  }
+}
+ 
+function adminLogout() {
+  if (confirm('Are you sure you want to logout?')) {
+    currentAdminUser = null;
+    document.getElementById('adminDashboard').classList.add('app-hidden');
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('loginErr').style.display = 'none';
+    document.getElementById('loginUser').value = '';
+    document.getElementById('loginPass').value = '';
+  }
 }
