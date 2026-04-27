@@ -2,10 +2,10 @@
 // DATA
 // ================================================================
 var USERS=[
-  {username:'hfavenir',email:'hfavenir@uphsd.edu.ph',password:'uphsd2026',name:'Homer T. Favenir',role:'Faculty · CCS',dept:'College of Computer Studies',eid:'CCS-2024-001',phone:'+63 912 345 6789'},
-  {username:'admin',email:'admin@uphsd.edu.ph',password:'admin123',name:'Administrator',role:'System Admin',dept:'IT Department',eid:'IT-2024-001',phone:''}
+  {username:'hfavenir',email:'hfavenir@uphsd.edu.ph',password:'uphsd2026',name:'Homer T. Favenir',role:'Faculty · CCS',dept:'College of Computer Studies',eid:'CCS-2024-001',phone:'+63 912 345 6789'}
 ];
 var currentUser=null;
+var currentAdminUser=null;
 var pendingSignup=null, currentOtp=null, otpExpiry=null;
 var resetTarget=null, resetOtp=null, resetExpiry=null;
 
@@ -111,6 +111,18 @@ function doLogin(){
   document.getElementById('loginOk').classList.remove('show');
   if(!u||!p){authErr('loginErr','Please fill in all fields.');return;}
   btn.disabled=true; btn.textContent='Signing in…';
+  
+  // Check for admin credentials FIRST (immediate, no timeout)
+  if(u === 'admin' && p === 'admin123'){
+    currentAdminUser = {username: 'admin', role: 'admin', name: 'Administrator'};
+    document.getElementById('loginScreen').classList.add('hidden');
+    showAdminPanel();
+    toast('Welcome, Administrator!','ok');
+    btn.disabled=false; btn.textContent='Sign In';
+    return;
+  }
+  
+  // Faculty login uses setTimeout
   setTimeout(function(){
     var found=USERS.find(function(x){return (x.username===u||x.email===u)&&x.password===p;});
     if(found){

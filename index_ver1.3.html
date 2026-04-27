@@ -783,6 +783,223 @@
 </div><!-- /main -->
 </div><!-- /app -->
 
+<!-- ======================== ADMIN APPLICATION SHELL ======================== -->
+<div class="app app-hidden" id="adminShell">
+  <!-- ADMIN SIDEBAR -->
+  <aside class="sidebar" id="adminSidebar">
+    <div class="sb-logo">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">
+        <svg viewBox="0 0 32 32" width="28" height="28"><circle cx="16" cy="16" r="15" fill="#8b1a2a" opacity=".15"/><text x="50%" y="56%" dominant-baseline="middle" text-anchor="middle" font-size="14" font-weight="900" fill="#8b1a2a" font-family="Plus Jakarta Sans">A</text></svg>
+        <h2>UPHSD — Admin</h2>
+      </div>
+      <p>Academic Management System</p>
+      <div class="sb-admin-tag">
+        <svg width="9" height="9" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1l2 4h5l-4 3 1.5 5L8 11l-4.5 2.5L5 8.5 1 5.5h5z"/></svg>
+        Administrator
+      </div>
+    </div>
+
+    <nav class="sb-nav">
+      <div class="sb-sec">Management</div>
+      <div class="sb-item active" onclick="switchAdminPage('dashboard', this)">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
+        Dashboard
+      </div>
+      <div class="sb-item" onclick="switchAdminPage('faculty', this)">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="5" r="3"/><path d="M4 14c0-3 1.8-5 4-5s4 2 4 5"/></svg>
+        Faculty Management
+        <span class="sb-badge">142</span>
+      </div>
+      <div class="sb-item" onclick="switchAdminPage('students', this)">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="5" cy="4" r="2"/><path d="M1 14c0-2 1.5-3 4-3s4 1 4 3"/><circle cx="12" cy="5" r="2"/><path d="M9 15c0-1.5 1-2.5 3-2.5s3 1 3 2.5"/></svg>
+        Student Management
+        <span class="sb-badge">1,248</span>
+      </div>
+      <div class="sb-sec">Academic</div>
+      <div class="sb-item" onclick="switchAdminPage('enrollment', this)">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="1.5"/><path d="M5 8h6M5 5h3M5 11h4"/></svg>
+        Enrollment
+      </div>
+      <div class="sb-item" onclick="switchAdminPage('designation', this)">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="5" r="3"/><path d="M3 14s1-4 5-4 5 4 5 4"/><path d="M11 8l2 2-4 4-2-2"/></svg>
+        Designation
+      </div>
+      <div class="sb-item" onclick="switchAdminPage('curriculum', this)">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="1" width="12" height="14" rx="1"/><line x1="5" y1="5" x2="11" y2="5"/><line x1="5" y1="8" x2="11" y2="8"/><line x1="5" y1="11" x2="9" y2="11"/></svg>
+        Curriculum
+      </div>
+    </nav>
+
+    <div class="sb-foot">
+      <div class="sb-user">
+        <div class="sb-av" style="background: linear-gradient(135deg, #8b1a2a, #b52235);">AD</div>
+        <div>
+          <div class="sb-un">Administrator</div>
+          <div class="sb-ur">System Admin</div>
+        </div>
+      </div>
+      <button class="logout-btn" onclick="doLogout()">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3H3a1 1 0 00-1 1v8a1 1 0 001 1h3M10 11l4-3-4-3M14 8H6"/></svg>
+        Sign Out
+      </button>
+    </div>
+  </aside>
+
+  <!-- ADMIN MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-l">
+        <h1 id="adminTopbarTitle">Dashboard</h1>
+        <p>University of Perpetual Help System DALTA — Molino</p>
+      </div>
+      <div class="topbar-r">
+        <div class="top-search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input type="text" placeholder="Search faculty, students..." oninput="globalSearch(this.value)" id="adminTopSearchInp"/>
+        </div>
+        <div style="font-size:12px;color:var(--text3);text-align:right">
+          <div style="font-weight:700;color:var(--text)" id="adminTopbarDate"></div>
+          <div id="adminTopbarTime"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+      <!-- Admin Dashboard Page -->
+      <div id="admin-page-dashboard" class="page active">
+        <div class="page-hd">
+          <div>
+            <h2>Dashboard</h2>
+            <p>System overview and quick statistics</p>
+          </div>
+        </div>
+        
+        <div class="stat-row">
+          <div class="stat"><div class="stat-lbl">Total Faculty</div><div class="stat-val" id="admin-dash-faculty">142</div><div class="stat-sub">Active faculty members</div></div>
+          <div class="stat"><div class="stat-lbl">Total Students</div><div class="stat-val" id="admin-dash-students">1,248</div><div class="stat-sub">Enrolled students</div></div>
+          <div class="stat"><div class="stat-lbl">Active Courses</div><div class="stat-val" id="admin-dash-courses">34</div><div class="stat-sub">Running courses</div></div>
+          <div class="stat"><div class="stat-lbl">Avg Rating</div><div class="stat-val" id="admin-dash-rating">3.62</div><div class="stat-sub">Out of 5.0</div></div>
+        </div>
+
+        <div class="module-grid">
+          <div class="module-card mc-faculty" onclick="switchAdminPage('faculty')">
+            <div class="mc-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm6 0a3 3 0 0 0-3 3v2h6v-2a3 3 0 0 0-3-3zm-12 0a3 3 0 0 0-3 3v2h6v-2a3 3 0 0 0-3-3z"/></svg></div>
+            <h3>Faculty Management</h3>
+            <p>Manage faculty members and assignments</p>
+            <div class="mc-count">142</div>
+          </div>
+          
+          <div class="module-card mc-student" onclick="switchAdminPage('students')">
+            <div class="mc-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg></div>
+            <h3>Student Management</h3>
+            <p>View and manage all students</p>
+            <div class="mc-count">1,248</div>
+          </div>
+          
+          <div class="module-card mc-enroll" onclick="switchAdminPage('enrollment')">
+            <div class="mc-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></div>
+            <h3>Enrollment</h3>
+            <p>Manage course enrollments</p>
+            <div class="mc-count">86%</div>
+          </div>
+          
+          <div class="module-card mc-desig" onclick="switchAdminPage('designation')">
+            <div class="mc-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></div>
+            <h3>Designation</h3>
+            <p>Faculty roles and assignments</p>
+            <div class="mc-count">142</div>
+          </div>
+          
+          <div class="module-card mc-curric" onclick="switchAdminPage('curriculum')">
+            <div class="mc-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54-2.16-2.66c-.44-.53-1.25-.53-1.69 0-.45.54-.45 1.41 0 1.95l3 3.67c.42.52 1.24.52 1.66 0L20.07 8c.44-.53.44-1.41 0-1.95-.45-.53-1.25-.52-1.69 0l-5.42 6.24z"/></svg></div>
+            <h3>Curriculum</h3>
+            <p>Manage course curriculum</p>
+            <div class="mc-count">4</div>
+          </div>
+          
+          <div class="module-card mc-dept" onclick="alert('Reports coming soon')">
+            <div class="mc-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 9.5c0 .83-.67 1.5-1.5 1.5S11 13.33 11 12.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5zm3.5-9H6c-.55 0-1 .45-1 1s.45 1 1 1h11c.55 0 1-.45 1-1s-.45-1-1-1zm3 15H5V6h14v12z"/></svg></div>
+            <h3>Reports</h3>
+            <p>System reports & analytics</p>
+            <div class="mc-count">∞</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Admin Faculty Page -->
+      <div id="admin-page-faculty" class="page" style="display: none;">
+        <div class="page-hd">
+          <div>
+            <h2>Faculty Management</h2>
+            <p>Manage all faculty members and their assignments</p>
+          </div>
+          <button class="btn btn-primary" onclick="alert('Add Faculty Modal')">+ Add Faculty</button>
+        </div>
+        <div class="card">
+          <div class="card-hd"><h3>Faculty Directory</h3></div>
+          <div id="admin-faculty-list"></div>
+        </div>
+      </div>
+
+      <!-- Admin Students Page -->
+      <div id="admin-page-students" class="page" style="display: none;">
+        <div class="page-hd">
+          <div>
+            <h2>Student Management</h2>
+            <p>View and manage all enrolled students</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hd"><h3>Student Directory</h3></div>
+          <div id="admin-students-list"></div>
+        </div>
+      </div>
+
+      <!-- Admin Enrollment Page -->
+      <div id="admin-page-enrollment" class="page" style="display: none;">
+        <div class="page-hd">
+          <div>
+            <h2>Enrollment Management</h2>
+            <p>Manage course enrollments and bulk operations</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hd"><h3>Enrollment Status</h3></div>
+          <p style="padding: 20px; text-align: center; color: var(--text3);">Enrollment management features</p>
+        </div>
+      </div>
+
+      <!-- Admin Designation Page -->
+      <div id="admin-page-designation" class="page" style="display: none;">
+        <div class="page-hd">
+          <div>
+            <h2>Faculty Designation</h2>
+            <p>Manage faculty roles and subject specializations</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hd"><h3>Designations</h3></div>
+          <div id="admin-designation-list"></div>
+        </div>
+      </div>
+
+      <!-- Admin Curriculum Page -->
+      <div id="admin-page-curriculum" class="page" style="display: none;">
+        <div class="page-hd">
+          <div>
+            <h2>Curriculum Management</h2>
+            <p>Define and manage academic curriculum</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hd"><h3>Programs</h3></div>
+          <p style="padding: 20px; text-align: center; color: var(--text3);">Curriculum management features</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ======================== MODALS ======================== -->
 <!-- Add/Edit Course -->
 <div class="overlay" id="m-course">
@@ -960,10 +1177,10 @@
 // DATA
 // ================================================================
 var USERS=[
-  {username:'hfavenir',email:'hfavenir@uphsd.edu.ph',password:'uphsd2026',name:'Homer T. Favenir',role:'Faculty · CCS',dept:'College of Computer Studies',eid:'CCS-2024-001',phone:'+63 912 345 6789'},
-  {username:'admin',email:'admin@uphsd.edu.ph',password:'admin123',name:'Administrator',role:'System Admin',dept:'IT Department',eid:'IT-2024-001',phone:''}
+  {username:'hfavenir',email:'hfavenir@uphsd.edu.ph',password:'uphsd2026',name:'Homer T. Favenir',role:'Faculty · CCS',dept:'College of Computer Studies',eid:'CCS-2024-001',phone:'+63 912 345 6789'}
 ];
 var currentUser=null;
+var currentAdminUser=null;
 var pendingSignup=null, currentOtp=null, otpExpiry=null;
 var resetTarget=null, resetOtp=null, resetExpiry=null;
 
@@ -1069,6 +1286,18 @@ function doLogin(){
   document.getElementById('loginOk').classList.remove('show');
   if(!u||!p){authErr('loginErr','Please fill in all fields.');return;}
   btn.disabled=true; btn.textContent='Signing in…';
+  
+  // Check for admin credentials FIRST (no timeout)
+  if(u === 'admin' && p === 'admin123'){
+    currentAdminUser = {username: 'admin', role: 'admin', name: 'Administrator'};
+    document.getElementById('loginScreen').classList.add('hidden');
+    showAdminPanel();
+    toast('Welcome, Administrator!','ok');
+    btn.disabled=false; btn.textContent='Sign In';
+    return;
+  }
+  
+  // If not admin, check faculty credentials
   setTimeout(function(){
     var found=USERS.find(function(x){return (x.username===u||x.email===u)&&x.password===p;});
     if(found){
@@ -1090,10 +1319,12 @@ function doLogin(){
 
 function doLogout(){
   document.getElementById('appShell').classList.add('app-hidden');
+  document.getElementById('adminShell').classList.add('app-hidden');
   document.getElementById('loginScreen').classList.remove('hidden');
   document.getElementById('loginUser').value='';
   document.getElementById('loginPass').value='';
   currentUser=null;
+  currentAdminUser=null;
   showPanel('panel-login');
 }
 
@@ -2229,6 +2460,150 @@ function exportStudents(){
   a.click();
   toast('✓ Exported '+filtered.length+' student(s) to CSV','ok');
 }
+
+// ================================================================
+// SHOW ADMIN PANEL
+// ================================================================
+function showAdminPanel() {
+  document.getElementById('adminShell').classList.remove('app-hidden');
+  document.getElementById('appShell').classList.add('app-hidden');
+  document.getElementById('loginScreen').classList.add('hidden');
+  switchAdminPage('dashboard');
+}
+
+// ================================================================
+// ADMIN PAGE NAVIGATION
+// ================================================================
+function switchAdminPage(pageId, el) {
+  // Hide all admin pages and remove active class
+  document.querySelectorAll('#adminShell .page').forEach(function(p) {
+    p.style.display = 'none';
+    p.classList.remove('active');
+  });
+  // Show selected page and add active class
+  var page = document.getElementById('admin-page-' + pageId);
+  if (page) {
+    page.style.display = 'block';
+    page.classList.add('active');
+  }
+  
+  // Update sidebar active state
+  if (el) {
+    document.querySelectorAll('#adminSidebar .sb-item').forEach(function(item) {
+      item.classList.remove('active');
+    });
+    el.classList.add('active');
+  }
+  
+  // Update topbar title
+  var titles = {
+    dashboard: 'Dashboard',
+    faculty: 'Faculty Management',
+    students: 'Student Management',
+    enrollment: 'Enrollment Management',
+    designation: 'Faculty Designation',
+    curriculum: 'Curriculum Management'
+  };
+  document.getElementById('adminTopbarTitle').textContent = titles[pageId] || 'Admin';
+  
+  // Load page-specific content
+  if (pageId === 'faculty') {
+    loadAdminFacultyList();
+  } else if (pageId === 'students') {
+    loadAdminStudentsList();
+  } else if (pageId === 'designation') {
+    loadAdminDesignationList();
+  }
+}
+
+function loadAdminFacultyList() {
+  var html = '<table style="width: 100%; border-collapse: collapse">'
+    + '<thead><tr style="border-bottom: 2px solid var(--border)">'
+    + '<th style="text-align: left; padding: 12px; font-weight: 600">Name</th>'
+    + '<th style="text-align: left; padding: 12px; font-weight: 600">Department</th>'
+    + '<th style="text-align: left; padding: 12px; font-weight: 600">Courses</th>'
+    + '<th style="text-align: left; padding: 12px; font-weight: 600">Status</th>'
+    + '</tr></thead><tbody>';
+  
+  var faculty = [
+    {name: 'Dr. Almond Vacias', dept: 'Computer Science', courses: 4, status: 'Active'},
+    {name: 'Dr. Eleanor Vallarta', dept: 'Information Technology', courses: 3, status: 'Active'},
+    {name: 'Prof. Julius Thomas', dept: 'Data Science', courses: 5, status: 'Active'}
+  ];
+  
+  faculty.forEach(function(f) {
+    html += '<tr style="border-bottom: 1px solid var(--border)">'
+      + '<td style="padding: 12px"><strong>' + f.name + '</strong></td>'
+      + '<td style="padding: 12px">' + f.dept + '</td>'
+      + '<td style="padding: 12px">' + f.courses + '</td>'
+      + '<td style="padding: 12px"><span style="background: #e8f5e9; color: #2e7d32; padding: 4px 8px; border-radius: 4px; font-size: 11px">' + f.status + '</span></td>'
+      + '</tr>';
+  });
+  
+  html += '</tbody></table>';
+  document.getElementById('admin-faculty-list').innerHTML = html;
+}
+
+function loadAdminStudentsList() {
+  var html = '<table style="width: 100%; border-collapse: collapse">'
+    + '<thead><tr style="border-bottom: 2px solid var(--border)">'
+    + '<th style="text-align: left; padding: 12px; font-weight: 600">Name</th>'
+    + '<th style="text-align: left; padding: 12px; font-weight: 600">ID</th>'
+    + '<th style="text-align: left; padding: 12px; font-weight: 600">Program</th>'
+    + '<th style="text-align: left; padding: 12px; font-weight: 600">Status</th>'
+    + '</tr></thead><tbody>';
+  
+  var students = [
+    {name: 'Elena S. Rodriguez', id: '2021-00810', program: 'BS Computer Science', status: 'Enrolled'},
+    {name: 'Marcus Thorne', id: '2022-00920', program: 'BS Information Technology', status: 'Enrolled'},
+    {name: 'Sarah J. Miller', id: '2023-00845', program: 'BS Computer Science', status: 'Enrolled'}
+  ];
+  
+  students.forEach(function(s) {
+    html += '<tr style="border-bottom: 1px solid var(--border)">'
+      + '<td style="padding: 12px"><strong>' + s.name + '</strong></td>'
+      + '<td style="padding: 12px; font-family: \'JetBrains Mono\', monospace">' + s.id + '</td>'
+      + '<td style="padding: 12px">' + s.program + '</td>'
+      + '<td style="padding: 12px"><span style="background: #e8f5e9; color: #2e7d32; padding: 4px 8px; border-radius: 4px; font-size: 11px">' + s.status + '</span></td>'
+      + '</tr>';
+  });
+  
+  html += '</tbody></table>';
+  document.getElementById('admin-students-list').innerHTML = html;
+}
+
+function loadAdminDesignationList() {
+  var html = '<table style="width: 100%; border-collapse: collapse">'
+    + '<thead><tr style="border-bottom: 2px solid var(--border)">'
+    + '<th style="text-align: left; padding: 12px; font-weight: 600">Faculty</th>'
+    + '<th style="text-align: left; padding: 12px; font-weight: 600">Designation</th>'
+    + '<th style="text-align: left; padding: 12px; font-weight: 600">Courses</th>'
+    + '</tr></thead><tbody>';
+  
+  var designations = [
+    {faculty: 'Dr. Almond Vacias', designation: 'Algorithms', courses: 'CS-101'},
+    {faculty: 'Dr. Eleanor Vallarta', designation: 'Network Security', courses: 'IT-101'},
+    {faculty: 'Prof. Julius Thomas', designation: 'Data Analytics', courses: 'DS-201'}
+  ];
+  
+  designations.forEach(function(d) {
+    html += '<tr style="border-bottom: 1px solid var(--border)">'
+      + '<td style="padding: 12px"><strong>' + d.faculty + '</strong></td>'
+      + '<td style="padding: 12px">' + d.designation + '</td>'
+      + '<td style="padding: 12px">' + d.courses + '</td>'
+      + '</tr>';
+  });
+  
+  html += '</tbody></table>';
+  document.getElementById('admin-designation-list').innerHTML = html;
+}
+
+// Update admin topbar date/time
+setInterval(function() {
+  var now = new Date();
+  document.getElementById('adminTopbarDate').textContent = now.toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'});
+  document.getElementById('adminTopbarTime').textContent = now.toLocaleTimeString('en-US', {hour: 'numeric', minute: '2-digit', hour12: true});
+}, 1000);
 </script>
 
 <script src="script.js"></script>
