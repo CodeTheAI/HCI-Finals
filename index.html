@@ -217,7 +217,7 @@
   </div>
 
   <div class="sb-foot">
-    <div class="sb-user">
+    <div class="sb-user" style="display:none">
       <div class="sb-av" id="sb-av-initials">HF</div>
       <div style="flex:1;min-width:0">
         <div class="sb-un" id="sb-name">Homer T. Favenir</div>
@@ -242,6 +242,13 @@
       <div class="top-search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
         <input type="text" placeholder="Search students, courses..." oninput="globalSearch(this.value)" id="topSearchInp"/>
+      </div>
+      <div class="topbar-profile" onclick="goPage('profile',document.getElementById('nav-profile'))" title="Open My Profile">
+        <div class="topbar-profile-meta">
+          <div class="topbar-profile-name" id="facultyTopName">Homer T. Favenir</div>
+          <div class="topbar-profile-role" id="facultyTopRole">Faculty · CCS</div>
+        </div>
+        <div class="topbar-profile-av" id="facultyTopAvatar">HF</div>
       </div>
       <button class="btn btn-primary btn-sm" onclick="openAddCourse()">+ Add Course</button>
     </div>
@@ -848,7 +855,7 @@
       </div>
     </nav>
 
-    <div class="sb-foot">
+    <div class="sb-foot" style="display:none">
       <div class="sb-user">
         <div class="sb-av" style="background: linear-gradient(135deg, #8b1a2a, #b52235);">AD</div>
         <div>
@@ -879,67 +886,224 @@
           <div style="font-weight:700;color:var(--text)" id="adminTopbarDate"></div>
           <div id="adminTopbarTime"></div>
         </div>
+        <div style="display:flex;align-items:center;gap:12px;padding-left:16px;border-left:1px solid var(--border)">
+          <div style="text-align:right">
+            <div style="font-size:13px;font-weight:600;color:var(--text)">Administrator</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">System Admin</div>
+          </div>
+          <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg, #8b1a2a, #b52235);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:14px;cursor:pointer;flex-shrink:0" onclick="showProfileMenu()" title="Profile">AD</div>
+          <button class="logout-btn" onclick="doLogout()" style="margin:0;padding:6px 8px;font-size:12px" title="Sign Out">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3H3a1 1 0 00-1 1v8a1 1 0 001 1h3M10 11l4-3-4-3M14 8H6"/></svg>
+          </button>
+        </div>
       </div>
     </div>
 
     <div class="content">
       <!-- Admin Dashboard Page -->
-      <div id="admin-page-dashboard" class="page active">
+      <div id="admin-page-dashboard" class="page">
         <div class="page-hd">
           <div>
             <h2>Dashboard</h2>
-            <p>System overview and quick statistics</p>
+            <p>Academic Performance & Management Overview</p>
+          </div>
+          <div style="font-size:13px;color:var(--text3)">Real-time data as of Apr 27, 2026</div>
+        </div>
+        
+        <!-- Key Metrics Section -->
+        <div style="margin-bottom:28px">
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px">
+            <!-- Total Faculty Card -->
+            <div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:20px;transition:all 0.3s ease;cursor:pointer" onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.08)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='none';this.style.transform='translateY(0)'">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+                <div>
+                  <div style="font-size:12px;color:var(--text3);font-weight:600;margin-bottom:6px">Total Faculty</div>
+                  <div style="font-size:28px;font-weight:700;color:var(--text)">42</div>
+                </div>
+                <div style="width:48px;height:48px;background:rgba(139,26,42,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--maroon);font-size:24px">👨‍🏫</div>
+              </div>
+              <div style="font-size:11px;color:var(--text3)"><span style="color:#4caf50;font-weight:600">↑ 8%</span> from last semester</div>
+            </div>
+            
+            <!-- Total Students Card -->
+            <div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:20px;transition:all 0.3s ease;cursor:pointer" onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.08)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='none';this.style.transform='translateY(0)'">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+                <div>
+                  <div style="font-size:12px;color:var(--text3);font-weight:600;margin-bottom:6px">Enrolled Students</div>
+                  <div style="font-size:28px;font-weight:700;color:var(--text)">1,248</div>
+                </div>
+                <div style="width:48px;height:48px;background:rgba(200,147,42,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--gold);font-size:24px">👥</div>
+              </div>
+              <div style="font-size:11px;color:var(--text3)"><span style="color:#4caf50;font-weight:600">↑ 12%</span> enrollment rate</div>
+            </div>
+            
+            <!-- Active Courses Card -->
+            <div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:20px;transition:all 0.3s ease;cursor:pointer" onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.08)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='none';this.style.transform='translateY(0)'">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+                <div>
+                  <div style="font-size:12px;color:var(--text3);font-weight:600;margin-bottom:6px">Active Courses</div>
+                  <div style="font-size:28px;font-weight:700;color:var(--text)">84</div>
+                </div>
+                <div style="width:48px;height:48px;background:rgba(74,124,89,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#4a7c59;font-size:24px">📚</div>
+              </div>
+              <div style="font-size:11px;color:var(--text3)"><span style="color:#ff9800;font-weight:600">2</span> courses under review</div>
+            </div>
+            
+            <!-- Department Rating Card -->
+            <div style="background:linear-gradient(135deg, #8b1a2a, #b52235);border-radius:var(--radius);padding:20px;color:#fff;transition:all 0.3s ease;cursor:pointer" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 20px rgba(139,26,42,0.25)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='none'">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+                <div>
+                  <div style="font-size:12px;opacity:0.9;font-weight:600;margin-bottom:6px">Overall Rating</div>
+                  <div style="font-size:28px;font-weight:700">4.2</div>
+                </div>
+                <div style="font-size:24px">⭐</div>
+              </div>
+              <div style="font-size:11px;opacity:0.8">Out of 5.0 · Excellent</div>
+            </div>
           </div>
         </div>
         
-        <div class="stat-row">
-          <div class="stat"><div class="stat-lbl">Total Faculty</div><div class="stat-val" id="admin-dash-faculty">142</div><div class="stat-sub">Active faculty members</div></div>
-          <div class="stat"><div class="stat-lbl">Total Students</div><div class="stat-val" id="admin-dash-students">1,248</div><div class="stat-sub">Enrolled students</div></div>
-          <div class="stat"><div class="stat-lbl">Active Courses</div><div class="stat-val" id="admin-dash-courses">34</div><div class="stat-sub">Running courses</div></div>
-          <div class="stat"><div class="stat-lbl">Avg Rating</div><div class="stat-val" id="admin-dash-rating">3.62</div><div class="stat-sub">Out of 5.0</div></div>
+        <!-- Departmental Insights Section -->
+        <div style="margin-bottom:28px">
+          <h3 style="margin:0 0 16px 0;font-size:16px;color:var(--text);font-weight:600">Departmental Insights</h3>
+          
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+            <!-- Enrollments Overview -->
+            <div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:20px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+                <div>
+                  <div style="font-size:12px;color:var(--text3);font-weight:600">Total Enrollments</div>
+                  <div style="font-size:24px;font-weight:700;color:var(--text);margin-top:4px">1,482</div>
+                </div>
+                <div style="font-size:32px">📊</div>
+              </div>
+              <div style="display:flex;gap:12px;font-size:11px">
+                <div><span style="color:#4caf50;font-weight:600">1,482</span> <span style="color:var(--text3)">Active</span></div>
+                <div><span style="color:#ff9800;font-weight:600">12</span> <span style="color:var(--text3)">Pending</span></div>
+                <div><span style="color:#f44336;font-weight:600">8</span> <span style="color:var(--text3)">Inactive</span></div>
+              </div>
+            </div>
+            
+            <!-- Department Performance -->
+            <div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:20px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+                <div>
+                  <div style="font-size:12px;color:var(--text3);font-weight:600">Avg Student Performance</div>
+                  <div style="font-size:24px;font-weight:700;color:var(--text);margin-top:4px">82.5%</div>
+                </div>
+                <div style="font-size:32px">📈</div>
+              </div>
+              <div style="background:#f5f5f5;height:6px;border-radius:3px;overflow:hidden">
+                <div style="background:linear-gradient(90deg, #4caf50, #8bc34a);height:100%;width:82.5%"></div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div class="module-grid">
-          <div class="module-card mc-faculty" onclick="switchAdminPage('faculty')">
-            <div class="mc-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm6 0a3 3 0 0 0-3 3v2h6v-2a3 3 0 0 0-3-3zm-12 0a3 3 0 0 0-3 3v2h6v-2a3 3 0 0 0-3-3z"/></svg></div>
-            <h3>Faculty Management</h3>
-            <p>Manage faculty members and assignments</p>
-            <div class="mc-count">142</div>
+        <!-- Departmental Faculty Status -->
+        <div style="margin-bottom:30px">
+          <h3 style="font-size:16px;color:var(--text);margin-bottom:15px;margin-top:0">Department Faculty Status</h3>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:15px">
+            <div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+              <div style="height:120px;background:linear-gradient(135deg, #2c3e50, #34495e);position:relative"></div>
+              <div style="padding:15px">
+                <h4 style="margin:0 0 8px 0;font-size:14px">Computer Science</h4>
+                <div style="font-size:13px;color:var(--text3)"><strong>15</strong> Faculty</div>
+                <div style="margin-top:8px;font-size:12px;color:var(--text3)">View Department</div>
+              </div>
+            </div>
+            
+            <div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+              <div style="height:120px;background:linear-gradient(135deg, #3498db, #2980b9);position:relative"></div>
+              <div style="padding:15px">
+                <h4 style="margin:0 0 8px 0;font-size:14px">Information Technology</h4>
+                <div style="font-size:13px;color:var(--text3)"><strong>18</strong> Faculty</div>
+                <div style="margin-top:8px;font-size:12px;color:var(--text3)">View Department</div>
+              </div>
+            </div>
+            
+            <div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+              <div style="height:120px;background:linear-gradient(135deg, #1abc9c, #16a085);position:relative"></div>
+              <div style="padding:15px">
+                <h4 style="margin:0 0 8px 0;font-size:14px">Data Science</h4>
+                <div style="font-size:13px;color:var(--text3)"><strong>9</strong> Faculty</div>
+                <div style="margin-top:8px;font-size:12px;color:var(--text3)">View Department</div>
+              </div>
+            </div>
           </div>
-          
-          <div class="module-card mc-student" onclick="switchAdminPage('students')">
-            <div class="mc-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg></div>
-            <h3>Student Management</h3>
-            <p>View and manage all students</p>
-            <div class="mc-count">1,248</div>
+        </div>
+
+        <!-- Administrative Alerts -->
+        <div style="margin-bottom:30px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px">
+            <h3 style="margin:0;font-size:16px;color:var(--text)">Administrative Alerts</h3>
+            <a href="#" style="font-size:12px;color:var(--maroon);text-decoration:none">View All Notices →</a>
           </div>
-          
-          <div class="module-card mc-enroll" onclick="switchAdminPage('enrollment')">
-            <div class="mc-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></div>
-            <h3>Enrollment</h3>
-            <p>Manage course enrollments</p>
-            <div class="mc-count">86%</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div style="background:#fff3cd;border-left:4px solid #ffc107;border-radius:4px;padding:12px;font-size:13px">
+              <strong style="color:#856404">Pending Faculty Evaluations</strong>
+              <div style="color:#856404;margin-top:4px">5 faculty members awaiting evaluation completion</div>
+            </div>
+            <div style="background:#f8d7da;border-left:4px solid #dc3545;border-radius:4px;padding:12px;font-size:13px">
+              <strong style="color:#721c24">Incomplete Grade Submissions</strong>
+              <div style="color:#721c24;margin-top:4px">Midterm grades due by Apr 15, 2024</div>
+            </div>
+            <div style="background:#d1ecf1;border-left:4px solid #17a2b8;border-radius:4px;padding:12px;font-size:13px">
+              <strong style="color:#0c5460">Course Schedule Updates</strong>
+              <div style="color:#0c5460;margin-top:4px">Summer term schedule review begins tomorrow</div>
+            </div>
+            <div style="background:#d4edda;border-left:4px solid #28a745;border-radius:4px;padding:12px;font-size:13px">
+              <strong style="color:#155724">Training Completed</strong>
+              <div style="color:#155724;margin-top:4px">All faculty professional development sessions completed</div>
+            </div>
           </div>
-          
-          <div class="module-card mc-desig" onclick="switchAdminPage('designation')">
-            <div class="mc-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></div>
-            <h3>Designation</h3>
-            <p>Faculty roles and assignments</p>
-            <div class="mc-count">142</div>
-          </div>
-          
-          <div class="module-card mc-curric" onclick="switchAdminPage('curriculum')">
-            <div class="mc-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54-2.16-2.66c-.44-.53-1.25-.53-1.69 0-.45.54-.45 1.41 0 1.95l3 3.67c.42.52 1.24.52 1.66 0L20.07 8c.44-.53.44-1.41 0-1.95-.45-.53-1.25-.52-1.69 0l-5.42 6.24z"/></svg></div>
-            <h3>Curriculum</h3>
-            <p>Manage course curriculum</p>
-            <div class="mc-count">4</div>
-          </div>
-          
-          <div class="module-card mc-dept" onclick="alert('Reports coming soon')">
-            <div class="mc-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 9.5c0 .83-.67 1.5-1.5 1.5S11 13.33 11 12.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5zm3.5-9H6c-.55 0-1 .45-1 1s.45 1 1 1h11c.55 0 1-.45 1-1s-.45-1-1-1zm3 15H5V6h14v12z"/></svg></div>
-            <h3>Reports</h3>
-            <p>System reports & analytics</p>
-            <div class="mc-count">∞</div>
+        </div>
+
+        <!-- Quick Access Grid -->
+        <div style="margin-bottom:20px">
+          <h3 style="font-size:16px;color:var(--text);margin-bottom:15px;margin-top:0">Quick Access</h3>
+          <div class="module-grid">
+            <div class="module-card mc-faculty" onclick="switchAdminPage('faculty')">
+              <div class="mc-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm6 0a3 3 0 0 0-3 3v2h6v-2a3 3 0 0 0-3-3zm-12 0a3 3 0 0 0-3 3v2h6v-2a3 3 0 0 0-3-3z"/></svg></div>
+              <h3>Faculty Management</h3>
+              <p>Manage faculty members and assignments</p>
+              <div class="mc-count">142</div>
+            </div>
+            
+            <div class="module-card mc-student" onclick="switchAdminPage('students')">
+              <div class="mc-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg></div>
+              <h3>Student Management</h3>
+              <p>View and manage all students</p>
+              <div class="mc-count">1,248</div>
+            </div>
+            
+            <div class="module-card mc-enroll" onclick="switchAdminPage('enrollment')">
+              <div class="mc-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></div>
+              <h3>Enrollment</h3>
+              <p>Manage course enrollments</p>
+              <div class="mc-count">1,482</div>
+            </div>
+            
+            <div class="module-card mc-desig" onclick="switchAdminPage('designation')">
+              <div class="mc-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></div>
+              <h3>Designation</h3>
+              <p>Faculty roles and assignments</p>
+              <div class="mc-count">142</div>
+            </div>
+            
+            <div class="module-card mc-curric" onclick="switchAdminPage('curriculum')">
+              <div class="mc-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54-2.16-2.66c-.44-.53-1.25-.53-1.69 0-.45.54-.45 1.41 0 1.95l3 3.67c.42.52 1.24.52 1.66 0L20.07 8c.44-.53.44-1.41 0-1.95-.45-.53-1.25-.52-1.69 0l-5.42 6.24z"/></svg></div>
+              <h3>Curriculum</h3>
+              <p>Manage course curriculum</p>
+              <div class="mc-count">4</div>
+            </div>
+            
+            <div class="module-card mc-dept" onclick="alert('Reports coming soon')">
+              <div class="mc-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 9.5c0 .83-.67 1.5-1.5 1.5S11 13.33 11 12.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5zm3.5-9H6c-.55 0-1 .45-1 1s.45 1 1 1h11c.55 0 1-.45 1-1s-.45-1-1-1zm3 15H5V6h14v12z"/></svg></div>
+              <h3>Reports</h3>
+              <p>System reports & analytics</p>
+              <div class="mc-count">∞</div>
+            </div>
           </div>
         </div>
       </div>
@@ -951,11 +1115,41 @@
             <h2>Faculty Management</h2>
             <p>Manage all faculty members and their assignments</p>
           </div>
-          <button class="btn btn-primary" onclick="alert('Add Faculty Modal')">+ Add Faculty</button>
+          <button class="btn btn-primary" onclick="openAddFacultyModal()">+ Add Faculty</button>
         </div>
-        <div class="card">
+
+        <!-- Faculty View Controls -->
+        <div style="display:flex;gap:10px;margin-bottom:15px;align-items:center">
+          <button class="btn" style="font-size:13px;padding:8px 12px;background:var(--maroon);color:#fff;border:none;cursor:pointer;border-radius:6px" onclick="setFacultyView('list'); this.style.background='var(--maroon)'; document.querySelector('[onclick*=setFacultyView][onclick*=card]').style.background='transparent'" id="faculty-view-list">📋 List View</button>
+          <button class="btn" style="font-size:13px;padding:8px 12px;background:transparent;color:var(--text);border:1px solid var(--border);cursor:pointer;border-radius:6px" onclick="setFacultyView('card'); this.style.background='var(--maroon)'; this.style.color='#fff'; document.querySelector('[onclick*=setFacultyView][onclick*=list]').style.background='transparent'; document.querySelector('[onclick*=setFacultyView][onclick*=list]').style.color='var(--text)'" id="faculty-view-card">🎴 Card View</button>
+          
+          <div style="flex:1;text-align:right">
+            <input type="text" placeholder="Search faculty by name or ID..." onkeyup="filterFacultyList(this.value)" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;width:250px;font-size:13px"/>
+          </div>
+        </div>
+
+        <!-- Faculty List View -->
+        <div id="faculty-list-container" class="card" style="display:block">
           <div class="card-hd"><h3>Faculty Directory</h3></div>
-          <div id="admin-faculty-list"></div>
+          <table style="width:100%;border-collapse:collapse;font-size:13px">
+            <thead>
+              <tr style="border-bottom:2px solid var(--border);background:#f5f5f5">
+                <th style="padding:12px;text-align:left;font-weight:600">#</th>
+                <th style="padding:12px;text-align:left;font-weight:600">Name</th>
+                <th style="padding:12px;text-align:left;font-weight:600">Email</th>
+                <th style="padding:12px;text-align:left;font-weight:600">Role</th>
+                <th style="padding:12px;text-align:left;font-weight:600">Department</th>
+                <th style="padding:12px;text-align:left;font-weight:600">Status</th>
+                <th style="padding:12px;text-align:center;font-weight:600">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="admin-faculty-list"></tbody>
+          </table>
+        </div>
+
+        <!-- Faculty Card View -->
+        <div id="faculty-card-container" style="display:none">
+          <div id="admin-faculty-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:15px"></div>
         </div>
       </div>
 
@@ -966,10 +1160,35 @@
             <h2>Student Management</h2>
             <p>View and manage all enrolled students</p>
           </div>
+          <div style="display:flex;gap:15px;align-items:center">
+            <div style="text-align:right;font-size:13px;color:var(--text3)">
+              <div style="font-weight:700;color:var(--text)" id="admin-student-count">0</div>
+              <div>Total Students</div>
+            </div>
+            <input type="text" placeholder="Search students..." onkeyup="filterStudentList(this.value)" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;width:250px;font-size:13px"/>
+          </div>
         </div>
+
         <div class="card">
           <div class="card-hd"><h3>Student Directory</h3></div>
-          <div id="admin-students-list"></div>
+          <div style="overflow-x:auto">
+            <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:800px">
+              <thead>
+                <tr style="border-bottom:2px solid var(--border);background:#f5f5f5">
+                  <th style="padding:12px;text-align:left;font-weight:600">#</th>
+                  <th style="padding:12px;text-align:left;font-weight:600">Name</th>
+                  <th style="padding:12px;text-align:left;font-weight:600">Student ID</th>
+                  <th style="padding:12px;text-align:left;font-weight:600">Email</th>
+                  <th style="padding:12px;text-align:left;font-weight:600">Year</th>
+                  <th style="padding:12px;text-align:left;font-weight:600">Section</th>
+                  <th style="padding:12px;text-align:center;font-weight:600">Courses</th>
+                  <th style="padding:12px;text-align:center;font-weight:600">Status</th>
+                  <th style="padding:12px;text-align:center;font-weight:600">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="admin-students-list"></tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -980,10 +1199,20 @@
             <h2>Enrollment Management</h2>
             <p>Manage course enrollments and bulk operations</p>
           </div>
+          <div style="display:flex;gap:10px">
+            <button class="btn" style="font-size:13px;padding:8px 12px;background:var(--maroon);color:#fff;border:none;cursor:pointer;border-radius:6px" onclick="setEnrollmentView('course'); this.style.background='var(--maroon)'; document.querySelector('[onclick*=setEnrollmentView][onclick*=student]').style.background='transparent'; document.querySelector('[onclick*=setEnrollmentView][onclick*=student]').style.color='var(--text)'" id="enrollment-view-course">📚 By Course</button>
+            <button class="btn" style="font-size:13px;padding:8px 12px;background:transparent;color:var(--text);border:1px solid var(--border);cursor:pointer;border-radius:6px" onclick="setEnrollmentView('student'); this.style.background='var(--maroon)'; this.style.color='#fff'; document.querySelector('[onclick*=setEnrollmentView][onclick*=course]').style.background='transparent'; document.querySelector('[onclick*=setEnrollmentView][onclick*=course]').style.color='var(--text)'" id="enrollment-view-student">👥 By Student</button>
+          </div>
         </div>
-        <div class="card">
-          <div class="card-hd"><h3>Enrollment Status</h3></div>
+
+        <!-- Enrollment by Course View -->
+        <div id="enrollment-course-container">
           <div id="admin-enrollment-list"></div>
+        </div>
+
+        <!-- Enrollment by Student View -->
+        <div id="enrollment-student-container" style="display:none">
+          <div id="admin-enrollment-students"></div>
         </div>
       </div>
 
@@ -994,10 +1223,24 @@
             <h2>Faculty Designation</h2>
             <p>Manage faculty roles and subject specializations</p>
           </div>
+          <button class="btn btn-primary" onclick="openAddDesignationModal()">+ Add Designation</button>
         </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:15px;margin-bottom:20px" id="admin-designation-list"></div>
+
         <div class="card">
-          <div class="card-hd"><h3>Designations</h3></div>
-          <div id="admin-designation-list"></div>
+          <div class="card-hd"><h3>Faculty by Designation</h3></div>
+          <table style="width:100%;border-collapse:collapse;font-size:13px">
+            <thead>
+              <tr style="border-bottom:2px solid var(--border);background:#f5f5f5">
+                <th style="padding:12px;text-align:left;font-weight:600">Role</th>
+                <th style="padding:12px;text-align:left;font-weight:600">Department</th>
+                <th style="padding:12px;text-align:center;font-weight:600">Faculty Count</th>
+                <th style="padding:12px;text-align:center;font-weight:600">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="admin-designation-table"></tbody>
+          </table>
         </div>
       </div>
 
@@ -1008,11 +1251,10 @@
             <h2>Curriculum Management</h2>
             <p>Define and manage academic curriculum</p>
           </div>
+          <button class="btn btn-primary" onclick="openAddCurriculumModal()">+ Add Program</button>
         </div>
-        <div class="card">
-          <div class="card-hd"><h3>Programs</h3></div>
-          <div id="admin-curriculum-list"></div>
-        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(350px,1fr));gap:15px" id="admin-curriculum-list"></div>
       </div>
     </div>
   </div>
@@ -2623,6 +2865,125 @@ setInterval(function() {
   document.getElementById('adminTopbarTime').textContent = now.toLocaleTimeString('en-US', {hour: 'numeric', minute: '2-digit', hour12: true});
 }, 1000);
 </script>
+
+<!-- Add Faculty Modal -->
+<div id="addFacultyModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:var(--radius);width:90%;max-width:500px;max-height:80vh;overflow-y:auto;box-shadow:0 10px 40px rgba(0,0,0,0.2)">
+    <div style="padding:20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+      <h2 style="margin:0;font-size:18px;color:var(--text)">Add New Faculty</h2>
+      <button onclick="closeAddFacultyModal()" style="background:none;border:none;font-size:24px;cursor:pointer">&times;</button>
+    </div>
+    <div style="padding:20px">
+      <div style="margin-bottom:15px">
+        <label style="display:block;font-size:13px;font-weight:600;margin-bottom:5px;color:var(--text)">Full Name *</label>
+        <input type="text" id="newFacultyName" placeholder="Dr. Jane Doe" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:13px;box-sizing:border-box">
+      </div>
+      <div style="margin-bottom:15px">
+        <label style="display:block;font-size:13px;font-weight:600;margin-bottom:5px;color:var(--text)">Email Address *</label>
+        <input type="email" id="newFacultyEmail" placeholder="jane.doe@uphsd.edu.ph" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:13px;box-sizing:border-box">
+      </div>
+      <div style="margin-bottom:15px">
+        <label style="display:block;font-size:13px;font-weight:600;margin-bottom:5px;color:var(--text)">Department *</label>
+        <select id="newFacultyDept" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:13px;box-sizing:border-box">
+          <option>Select Department</option>
+          <option>College of Computer Studies</option>
+          <option>College of Engineering</option>
+          <option>College of Arts</option>
+        </select>
+      </div>
+      <div style="margin-bottom:15px">
+        <label style="display:block;font-size:13px;font-weight:600;margin-bottom:5px;color:var(--text)">Role *</label>
+        <select id="newFacultyRole" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:13px;box-sizing:border-box">
+          <option>Faculty · CCS</option>
+          <option>Faculty · CED</option>
+          <option>Faculty · CAD</option>
+          <option>Department Chair</option>
+        </select>
+      </div>
+      <div style="margin-bottom:20px">
+        <label style="display:block;font-size:13px;font-weight:600;margin-bottom:5px;color:var(--text)">Phone</label>
+        <input type="tel" id="newFacultyPhone" placeholder="+63 912 345 6789" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:13px;box-sizing:border-box">
+      </div>
+    </div>
+    <div style="padding:15px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end">
+      <button onclick="closeAddFacultyModal()" style="padding:10px 20px;border:1px solid var(--border);background:#fff;color:var(--text);border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">Cancel</button>
+      <button onclick="saveFacultyMember()" style="padding:10px 20px;background:var(--maroon);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">Add Faculty</button>
+    </div>
+  </div>
+</div>
+
+<!-- Faculty Profile Modal -->
+<div id="facultyProfileModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:1000;overflow-y:auto">
+  <div style="background:#fff;margin:20px auto;width:90%;max-width:600px;border-radius:var(--radius);box-shadow:0 10px 40px rgba(0,0,0,0.2)">
+    <button onclick="closeFacultyProfile()" style="position:absolute;top:15px;right:15px;background:none;border:none;font-size:24px;cursor:pointer;z-index:10">&times;</button>
+    <div id="facultyProfileContent" style="padding:20px"></div>
+  </div>
+</div>
+
+<!-- Add Designation Modal -->
+<div id="addDesignationModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:var(--radius);width:90%;max-width:500px;box-shadow:0 10px 40px rgba(0,0,0,0.2)">
+    <div style="padding:20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+      <h2 style="margin:0;font-size:18px;color:var(--text)">Add Faculty Designation</h2>
+      <button onclick="closeAddDesignationModal()" style="background:none;border:none;font-size:24px;cursor:pointer">&times;</button>
+    </div>
+    <div style="padding:20px">
+      <div style="margin-bottom:15px">
+        <label style="display:block;font-size:13px;font-weight:600;margin-bottom:5px">Role *</label>
+        <input type="text" id="newDesignationRole" placeholder="e.g. Department Chair" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:13px;box-sizing:border-box">
+      </div>
+      <div style="margin-bottom:15px">
+        <label style="display:block;font-size:13px;font-weight:600;margin-bottom:5px">Department *</label>
+        <select id="newDesignationDept" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:13px;box-sizing:border-box">
+          <option>Select Department</option>
+          <option>College of Computer Studies</option>
+          <option>College of Engineering</option>
+          <option>College of Arts</option>
+        </select>
+      </div>
+      <div style="margin-bottom:20px">
+        <label style="display:block;font-size:13px;font-weight:600;margin-bottom:5px">Faculty Member *</label>
+        <select id="newDesignationFaculty" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:13px;box-sizing:border-box"></select>
+      </div>
+    </div>
+    <div style="padding:15px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end">
+      <button onclick="closeAddDesignationModal()" style="padding:10px 20px;border:1px solid var(--border);background:#fff;color:var(--text);border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">Cancel</button>
+      <button onclick="saveDesignation()" style="padding:10px 20px;background:var(--maroon);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">Add Designation</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Curriculum Modal -->
+<div id="addCurriculumModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:var(--radius);width:90%;max-width:500px;box-shadow:0 10px 40px rgba(0,0,0,0.2)">
+    <div style="padding:20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+      <h2 style="margin:0;font-size:18px;color:var(--text)">Add Academic Program</h2>
+      <button onclick="closeAddCurriculumModal()" style="background:none;border:none;font-size:24px;cursor:pointer">&times;</button>
+    </div>
+    <div style="padding:20px">
+      <div style="margin-bottom:15px">
+        <label style="display:block;font-size:13px;font-weight:600;margin-bottom:5px">Program Name *</label>
+        <input type="text" id="newProgramName" placeholder="e.g. BS Computer Science" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:13px;box-sizing:border-box">
+      </div>
+      <div style="margin-bottom:15px">
+        <label style="display:block;font-size:13px;font-weight:600;margin-bottom:5px">Program Code *</label>
+        <input type="text" id="newProgramCode" placeholder="e.g. BSCS" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:13px;box-sizing:border-box">
+      </div>
+      <div style="margin-bottom:15px">
+        <label style="display:block;font-size:13px;font-weight:600;margin-bottom:5px">Total Units *</label>
+        <input type="number" id="newProgramUnits" placeholder="120" min="100" max="200" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:13px;box-sizing:border-box">
+      </div>
+      <div style="margin-bottom:20px">
+        <label style="display:block;font-size:13px;font-weight:600;margin-bottom:5px">Semesters *</label>
+        <input type="number" id="newProgramSemesters" placeholder="8" min="4" max="12" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:13px;box-sizing:border-box">
+      </div>
+    </div>
+    <div style="padding:15px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end">
+      <button onclick="closeAddCurriculumModal()" style="padding:10px 20px;border:1px solid var(--border);background:#fff;color:var(--text);border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">Cancel</button>
+      <button onclick="saveProgram()" style="padding:10px 20px;background:var(--maroon);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">Add Program</button>
+    </div>
+  </div>
+</div>
 
 <script src="script.js"></script>
 </body>

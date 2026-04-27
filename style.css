@@ -87,8 +87,8 @@
 .card-hd h3 { font-size: 14px; font-weight: 700; }
 .card > div { padding: 16px; }
 
-.page { animation: fadeIn .3s ease; }
-.page.active { display: block !important; }
+.page { animation: fadeIn .3s ease; display: none; }
+.page.active { display: block; }
 
 html,body{height:100%;font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow:hidden;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;scroll-behavior:smooth;line-height:1.6;letter-spacing:-0.3px}
 
@@ -298,19 +298,34 @@ html,body{height:100%;font-family:'Inter',sans-serif;background:var(--bg);color:
 .sb-un{font-size:12.5px;color:var(--text);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sb-ur{font-size:10px;color:var(--text3)}
 .logout-btn {
-  width:100%;display:flex;align-items:center;justify-content:center;gap:7px;padding:10px;background:linear-gradient(135deg, rgba(220,38,38,.08), rgba(220,38,38,.04));border:1.5px solid rgba(220,38,38,.25);border-radius:9px;color:#b91c1c;font-size:13px;font-weight:750;cursor:pointer;font-family:inherit;letter-spacing:0.2px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  width:auto;display:flex;align-items:center;justify-content:center;gap:7px;padding:8px 10px;background:transparent;border:1.5px solid var(--border);border-radius:9px;color:var(--text3);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .logout-btn:hover {
-  background:linear-gradient(135deg,rgba(220,38,38,.15),rgba(220,38,38,.1));
-  border-color: rgba(220,38,38,.5);
-  transform: translateY(-3px);
-  box-shadow: 0 6px 16px rgba(220,38,38,0.2);
+  background:rgba(220,38,38,.08);
+  border-color: rgba(220,38,38,.4);
+  color:#b91c1c;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220,38,38,0.15);
 }
 
 .logout-btn:active {
-  transform: translateY(-1px);
+  transform: translateY(0);
+}
+
+.sb-foot .logout-btn {
+  width: 100%;
+  padding: 10px;
+  background: linear-gradient(135deg, rgba(220,38,38,.08), rgba(220,38,38,.04));
+  border: 1.5px solid rgba(220,38,38,.25);
+  color: #b91c1c;
+  font-weight: 700;
+}
+
+.sb-foot .logout-btn:hover {
+  background: linear-gradient(135deg,rgba(220,38,38,.15),rgba(220,38,38,.1));
+  border-color: rgba(220,38,38,.5);
+  transform: translateY(-3px);
 }
 
 /* ================================================================ MAIN ================================================================ */
@@ -332,11 +347,58 @@ html,body{height:100%;font-family:'Inter',sans-serif;background:var(--bg);color:
 }
 
 .topbar-r {
-  display:flex;gap:8px;align-items:center;
+  display:flex;gap:16px;align-items:center;justify-content:flex-end;
+}
+
+.topbar-profile {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:6px 8px 6px 12px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  background:#fff;
+  cursor:pointer;
+  transition:all .2s ease;
+}
+
+.topbar-profile:hover {
+  border-color:rgba(139,26,42,.22);
+  box-shadow:0 3px 10px rgba(0,0,0,.06);
+}
+
+.topbar-profile-meta {
+  min-width:0;
+}
+
+.topbar-profile-name {
+  font-size:12px;
+  font-weight:700;
+  color:var(--text);
+  white-space:nowrap;
+}
+
+.topbar-profile-role {
+  font-size:11px;
+  color:var(--text3);
+}
+
+.topbar-profile-av {
+  width:32px;
+  height:32px;
+  border-radius:8px;
+  background:linear-gradient(135deg,var(--maroon),var(--maroon-light));
+  color:#fff;
+  font-size:11px;
+  font-weight:800;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-shrink:0;
 }
 
 .top-search {
-  position:relative;display:flex;align-items:center;width:240px;
+  position:relative;display:flex;align-items:center;width:240px;flex-shrink:0;
 }
 
 .top-search svg {
@@ -379,7 +441,7 @@ html,body{height:100%;font-family:'Inter',sans-serif;background:var(--bg);color:
 }
 
 .page{display:none;animation:fadeIn 0.3s ease-out}
-.page.active{display:block}
+.page.active{display:block;}
 
 /* ================================================================ COMPONENTS ================================================================ */
 .card {
@@ -1326,7 +1388,7 @@ select option{background:#fff;color:var(--text)}
 }
 
 /* Modal Styles */
-.modal {
+.admin-modal {
   display: none;
   position: fixed;
   z-index: 200;
@@ -1338,7 +1400,7 @@ select option{background:#fff;color:var(--text)}
   animation: fadeIn 0.3s ease;
 }
 
-.modal.show {
+.admin-modal.show {
   display: flex;
   align-items: center;
   justify-content: center;
