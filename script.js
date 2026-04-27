@@ -103,39 +103,6 @@ function authErr(id,msg){var el=document.getElementById(id);if(el){el.textConten
 function authOk(id,msg){var el=document.getElementById(id);if(el){el.textContent=msg;el.classList.add('show');}}
 function togglePw(id){var i=document.getElementById(id);i.type=i.type==='password'?'text':'password';}
 
-function syncFacultyProfileUI(){
-  if(!currentUser) return;
-  var initials=(currentUser.name||'Faculty').split(' ').map(function(w){return w[0];}).join('').slice(0,2).toUpperCase();
-  var roleText=currentUser.role||'Faculty';
-
-  var sbName=document.getElementById('sb-name');
-  var sbRole=document.getElementById('sb-role');
-  var sbAv=document.getElementById('sb-av-initials');
-  var topName=document.getElementById('facultyTopName');
-  var topRole=document.getElementById('facultyTopRole');
-  var topAv=document.getElementById('facultyTopAvatar');
-
-  if(sbName) sbName.textContent=currentUser.name;
-  if(sbRole) sbRole.textContent=roleText;
-  if(topName) topName.textContent=currentUser.name;
-  if(topRole) topRole.textContent=roleText;
-
-  [sbAv, topAv].forEach(function(el){
-    if(!el) return;
-    if(currentUser.profilePicture){
-      el.style.backgroundImage='url('+currentUser.profilePicture+')';
-      el.style.backgroundSize='cover';
-      el.style.backgroundPosition='center';
-      el.textContent='';
-    } else {
-      el.style.backgroundImage='';
-      el.style.backgroundSize='';
-      el.style.backgroundPosition='';
-      el.textContent=initials;
-    }
-  });
-}
-
 function doLogin(){
   var u=document.getElementById('loginUser').value.trim();
   var p=document.getElementById('loginPass').value;
@@ -172,7 +139,13 @@ function doLogin(){
       }
       document.getElementById('loginScreen').classList.add('hidden');
       document.getElementById('appShell').classList.remove('app-hidden');
-      syncFacultyProfileUI();
+      document.getElementById('sb-name').textContent=currentUser.name;
+      document.getElementById('sb-role').textContent=found.role;
+      document.getElementById('sb-av-initials').textContent=currentUser.name.split(' ').map(function(w){return w[0];}).join('').slice(0,2).toUpperCase();
+      if(currentUser.profilePicture){
+        document.querySelector('.sb-av').style.backgroundImage='url('+currentUser.profilePicture+')';
+        document.querySelector('.sb-av').textContent='';
+      }
       initApp();
       toast('Welcome back, '+currentUser.name.split(' ')[0]+'!','ok');
     } else {
@@ -471,8 +444,8 @@ function renderCourses(){
       +'<button class="btn btn-primary btn-sm" onclick="openCourseStudents('+i+')">View Student List</button>'
       +'</div></div>'
       +'<div style="display:flex;gap:5px;margin-top:10px;flex-wrap:wrap">'
-      +'<button class="btn btn-sm btn-warn" onclick="editCourse('+i+')">✎ Edit</button>'
-      +'<button class="btn btn-sm btn-danger" onclick="askDeleteCourse('+i+')">🗑 Delete</button>'
+      +'<button class="btn btn-sm btn-warn" onclick="editCourse('+i+',event)">✎ Edit</button>'
+      +'<button class="btn btn-sm btn-danger" onclick="askDeleteCourse('+i+',event)">🗑 Delete</button>'
       +'</div></div>';
   }).join('');
   document.getElementById('courses-count').textContent=DB.courses.length;
@@ -589,7 +562,6 @@ function openAddCourse(){
   openModal('m-course');
 }
 function editCourse(idx,e){
-  e=e||window.event;
   if(e){e.stopPropagation();}
   var c=DB.courses[idx];
   document.getElementById('m-course-title').textContent='Edit Course';
@@ -618,7 +590,6 @@ function saveCourse(){
   document.getElementById('courses-count').textContent=DB.courses.length;
 }
 function askDeleteCourse(idx,e){
-  e=e||window.event;
   if(e) e.stopPropagation();
   document.getElementById('m-confirm-msg').textContent='Delete course "'+DB.courses[idx].code+' — '+DB.courses[idx].name+'"? This cannot be undone.';
   document.getElementById('m-confirm-ok').onclick=function(){DB.courses.splice(idx,1);closeModal('m-confirm');renderCourses();renderDashboard();populateGbSelect();populateAttSelect();populateGmailSelects();renderSidebarSchedule();document.getElementById('courses-count').textContent=DB.courses.length;toast('Course deleted.','ok');};
@@ -1077,7 +1048,9 @@ function saveProfile(){
   currentUser.phone=document.getElementById('pf-phone').value.trim();
   var profileData={name:currentUser.name,email:currentUser.email,dept:currentUser.dept,eid:currentUser.eid,phone:currentUser.phone,profilePicture:currentUser.profilePicture};
   localStorage.setItem('profile_'+currentUser.username,JSON.stringify(profileData));
-  syncFacultyProfileUI();
+  document.getElementById('sb-name').textContent=currentUser.name;
+  document.getElementById('sb-role').textContent=currentUser.role;
+  document.getElementById('sb-av-initials').textContent=currentUser.name.split(' ').map(function(w){return w[0];}).join('').slice(0,2).toUpperCase();
   renderProfile();
   toast('Profile saved!','ok');
 }
@@ -1105,7 +1078,8 @@ function handleProfileUpload(e){
     currentUser.profilePicture=event.target.result;
     var profileData={name:currentUser.name,email:currentUser.email,dept:currentUser.dept,eid:currentUser.eid,phone:currentUser.phone,profilePicture:event.target.result};
     localStorage.setItem('profile_'+currentUser.username,JSON.stringify(profileData));
-    syncFacultyProfileUI();
+    document.querySelector('.sb-av').style.backgroundImage='url('+event.target.result+')';
+    document.querySelector('.sb-av').textContent='';
     document.getElementById('profileUploadPreview').innerHTML='<img src="'+event.target.result+'" />';
     renderProfile();
     toast('Profile picture updated!','ok');
@@ -1358,17 +1332,6 @@ function switchAdminPage(page, el){
   var targetPage=document.getElementById('admin-page-'+page);
   if(targetPage) targetPage.style.display='block';
   
-  // Update topbar title
-  var titles = {
-    dashboard: 'Dashboard',
-    faculty: 'Faculty Management',
-    students: 'Student Management',
-    enrollment: 'Enrollment Management',
-    designation: 'Faculty Designation',
-    curriculum: 'Curriculum Management'
-  };
-  document.getElementById('adminTopbarTitle').textContent = titles[page] || 'Admin';
-  
   switch(page){
     case 'dashboard': renderAdminDashboard(); break;
     case 'faculty': renderAdminFaculty(); break;
@@ -1423,491 +1386,1784 @@ function renderAdminDashboard(){
 }
 
 function renderAdminFaculty(){
-  loadFacultyListView();
-  renderFacultyCardView();
-}
-
-var adminFacultyCurrentView = 'list';
-
-function setFacultyView(view) {
-  adminFacultyCurrentView = view;
-  var listContainer = document.getElementById('faculty-list-container');
-  var cardContainer = document.getElementById('faculty-card-container');
+  var html='<div class="table-responsive"><table class="admin-table"><thead><tr><th>#</th><th>Name</th><th>Email</th><th>Role</th><th>Department</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
   
-  if (view === 'list') {
-    listContainer.style.display = 'block';
-    cardContainer.style.display = 'none';
-    loadFacultyListView();
-  } else {
-    listContainer.style.display = 'none';
-    cardContainer.style.display = 'block';
-    renderFacultyCardView();
-  }
-}
-
-function loadFacultyListView() {
-  var html = '';
-  
-  USERS.forEach(function(f, i) {
-    html += '<tr style="border-bottom:1px solid var(--border)">';
-    html += '<td style="padding:12px">'+(i+1)+'</td>';
-    html += '<td style="padding:12px"><strong>'+f.name+'</strong></td>';
-    html += '<td style="padding:12px"><a href="mailto:'+f.email+'" style="color:var(--maroon);text-decoration:none">'+f.email+'</a></td>';
-    html += '<td style="padding:12px"><span style="background:rgba(139,26,42,0.1);color:var(--maroon);padding:4px 8px;border-radius:4px;font-size:12px">'+f.role+'</span></td>';
-    html += '<td style="padding:12px">'+f.dept+'</td>';
-    html += '<td style="padding:12px"><span style="background:#d4edda;color:#155724;padding:4px 8px;border-radius:4px;font-size:12px">Active</span></td>';
-    html += '<td style="padding:12px;text-align:center">';
-    html += '<button onclick="viewFacultyProfile('+i+')" style="background:none;border:none;cursor:pointer;font-size:16px;margin:0 4px" title="View">👁</button>';
-    html += '<button onclick="editFacultyMember('+i+')" style="background:none;border:none;cursor:pointer;font-size:16px;margin:0 4px" title="Edit">✏️</button>';
-    html += '<button onclick="archiveFacultyMember('+i+')" style="background:none;border:none;cursor:pointer;font-size:16px;margin:0 4px" title="Archive">🗄️</button>';
-    html += '</td></tr>';
+  USERS.forEach(function(f, i){
+    html+='<tr><td>'+(i+1)+'</td>';
+    html+='<td><strong>'+f.name+'</strong></td>';
+    html+='<td><a href="mailto:'+f.email+'" style="color:var(--accent)">'+f.email+'</a></td>';
+    html+='<td><span class="role-badge">'+f.role+'</span></td>';
+    html+='<td>'+f.dept+'</td>';
+    html+='<td><span class="status-badge active">Active</span></td>';
+    html+='<td><div class="td-actions">';
+    html+='<button class="btn btn-sm" onclick="alert(\'View: '+f.name+'\')" title="View">👁</button>';
+    html+='<button class="btn btn-sm" onclick="alert(\'Edit: '+f.name+'\')" title="Edit">✏️</button>';
+    html+='<button class="btn btn-danger btn-sm" onclick="alert(\'Archive: '+f.name+'\')" title="Archive">🗄️</button>';
+    html+='</div></td></tr>';
   });
   
-  document.getElementById('admin-faculty-list').innerHTML = html || '<tr><td colspan="7" style="padding:20px;text-align:center;color:var(--text3)">No faculty members found.</td></tr>';
-}
-
-function renderFacultyCardView() {
-  var html = '';
+  html+='</tbody></table></div>';
   
-  USERS.forEach(function(f, i) {
-    html += '<div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;cursor:pointer" onclick="viewFacultyProfile('+i+')">';
-    html += '<div style="height:100px;background:linear-gradient(135deg, #8b1a2a, #b52235)"></div>';
-    html += '<div style="padding:15px">';
-    html += '<h4 style="margin:0 0 8px 0;font-size:14px;color:var(--text)">'+f.name+'</h4>';
-    html += '<div style="font-size:12px;color:var(--text3);margin-bottom:10px">'+f.role+'</div>';
-    html += '<div style="font-size:11px;color:var(--text3);margin-bottom:10px">'+f.dept+'</div>';
-    html += '<div style="display:flex;gap:8px;justify-content:space-between;font-size:12px">';
-    html += '<button onclick="event.stopPropagation(); viewFacultyProfile('+i+')" style="flex:1;padding:6px;background:var(--maroon);color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:11px">View Profile</button>';
-    html += '<button onclick="event.stopPropagation(); editFacultyMember('+i+')" style="flex:1;padding:6px;background:transparent;border:1px solid var(--border);color:var(--text);border-radius:4px;cursor:pointer;font-size:11px">Edit</button>';
-    html += '</div>';
-    html += '</div>';
-    html += '</div>';
-  });
-  
-  document.getElementById('admin-faculty-cards').innerHTML = html || '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text3)">No faculty members found.</div>';
-}
-
-function filterFacultyList(query) {
-  var listContainer = document.getElementById('faculty-list-container');
-  var cardContainer = document.getElementById('faculty-card-container');
-  
-  if (adminFacultyCurrentView === 'list') {
-    var rows = listContainer.querySelectorAll('tbody tr');
-    rows.forEach(function(row) {
-      var text = row.textContent.toLowerCase();
-      row.style.display = text.includes(query.toLowerCase()) ? '' : 'none';
-    });
-  } else {
-    var cards = cardContainer.querySelectorAll('[onclick*="viewFacultyProfile"]').parentElement.parentElement.parentElement;
-    // Add card filtering
-  }
-}
-
-function openAddFacultyModal() {
-  document.getElementById('addFacultyModal').style.display = 'flex';
-}
-
-function closeAddFacultyModal() {
-  document.getElementById('addFacultyModal').style.display = 'none';
-  document.getElementById('newFacultyName').value = '';
-  document.getElementById('newFacultyEmail').value = '';
-  document.getElementById('newFacultyDept').value = 'Select Department';
-  document.getElementById('newFacultyRole').value = 'Faculty · CCS';
-  document.getElementById('newFacultyPhone').value = '';
-}
-
-function saveFacultyMember() {
-  var name = document.getElementById('newFacultyName').value;
-  var email = document.getElementById('newFacultyEmail').value;
-  var dept = document.getElementById('newFacultyDept').value;
-  var role = document.getElementById('newFacultyRole').value;
-  var phone = document.getElementById('newFacultyPhone').value;
-  
-  if (!name || !email || dept === 'Select Department') {
-    toast('Please fill in all required fields.', 'error');
-    return;
-  }
-  
-  var newFaculty = {
-    username: email.split('@')[0],
-    email: email,
-    password: 'defaultPass123',
-    name: name,
-    role: role,
-    dept: dept,
-    eid: 'CCS-'+(2024+Math.floor(Math.random()*10))+'-'+(Math.floor(Math.random()*1000)+1).toString().padStart(3,'0'),
-    phone: phone || '+63 912 345 6789'
-  };
-  
-  USERS.push(newFaculty);
-  toast('Faculty member added successfully!', 'ok');
-  closeAddFacultyModal();
-  renderAdminFaculty();
-}
-
-function viewFacultyProfile(index) {
-  var f = USERS[index];
-  var html = '';
-  
-  html += '<div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:20px">';
-  html += '<div style="flex:1">';
-  html += '<h2 style="margin:0 0 5px 0;color:var(--text)">'+f.name+'</h2>';
-  html += '<div style="color:var(--text3);font-size:13px">'+f.role+' · '+f.dept+'</div>';
-  html += '</div>';
-  html += '<div style="width:80px;height:80px;background:linear-gradient(135deg, #8b1a2a, #b52235);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:24px">'+f.name.charAt(0)+f.name.split(' ')[1].charAt(0)+'</div>';
-  html += '</div>';
-  
-  html += '<div style="background:#f5f5f5;padding:15px;border-radius:8px;margin-bottom:15px">';
-  html += '<div style="margin-bottom:12px"><strong style="color:var(--text3);font-size:12px">EMAIL</strong><div style="color:var(--text);margin-top:4px">'+f.email+'</div></div>';
-  html += '<div style="margin-bottom:12px"><strong style="color:var(--text3);font-size:12px">EMPLOYEE ID</strong><div style="color:var(--text);margin-top:4px;font-family:monospace">'+f.eid+'</div></div>';
-  html += '<div style="margin-bottom:12px"><strong style="color:var(--text3);font-size:12px">PHONE</strong><div style="color:var(--text);margin-top:4px">'+f.phone+'</div></div>';
-  html += '<div><strong style="color:var(--text3);font-size:12px">DEPARTMENT</strong><div style="color:var(--text);margin-top:4px">'+f.dept+'</div></div>';
-  html += '</div>';
-  
-  html += '<div style="display:flex;gap:10px">';
-  html += '<button onclick="closeFacultyProfile(); editFacultyMember('+index+')" style="flex:1;padding:10px;background:var(--maroon);color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600">Edit Profile</button>';
-  html += '<button onclick="closeFacultyProfile()" style="flex:1;padding:10px;background:transparent;border:1px solid var(--border);color:var(--text);border-radius:6px;cursor:pointer;font-weight:600">Close</button>';
-  html += '</div>';
-  
-  document.getElementById('facultyProfileContent').innerHTML = html;
-  document.getElementById('facultyProfileModal').style.display = 'block';
-}
-
-function closeFacultyProfile() {
-  document.getElementById('facultyProfileModal').style.display = 'none';
-}
-
-function editFacultyMember(index) {
-  var f = USERS[index];
-  // Open edit modal with faculty data pre-filled
-  document.getElementById('newFacultyName').value = f.name;
-  document.getElementById('newFacultyEmail').value = f.email;
-  document.getElementById('newFacultyDept').value = f.dept;
-  document.getElementById('newFacultyRole').value = f.role;
-  document.getElementById('newFacultyPhone').value = f.phone;
-  closeFacultyProfile();
-  openAddFacultyModal();
-}
-
-function archiveFacultyMember(index) {
-  if (confirm('Are you sure you want to archive this faculty member?')) {
-    USERS.splice(index, 1);
-    toast('Faculty member archived.', 'ok');
-    renderAdminFaculty();
-  }
+  document.getElementById('admin-faculty-list').innerHTML=html||'<div class="empty">No faculty members.</div>';
 }
 
 function renderAdminStudents(){
-  var html = '';
+  var html='<div class="table-responsive"><table class="admin-table"><thead><tr><th>#</th><th>Name</th><th>Student ID</th><th>Email</th><th>Year</th><th>Section</th><th>Courses</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
   
   DB.students.forEach(function(s, i){
-    var enrolledIn = DB.courses.filter(function(c, idx){return s.courses.indexOf(idx) > -1;}).length;
-    html += '<tr style="border-bottom:1px solid var(--border)">';
-    html += '<td style="padding:12px">'+(i+1)+'</td>';
-    html += '<td style="padding:12px"><strong>'+s.ln+', '+s.fn+'</strong> '+s.mi+'</td>';
-    html += '<td style="padding:12px;font-family:monospace;font-size:11px">'+s.sid+'</td>';
-    html += '<td style="padding:12px"><a href="mailto:'+s.email+'" style="color:var(--maroon);text-decoration:none">'+s.email+'</a></td>';
-    html += '<td style="padding:12px">'+s.year+'</td>';
-    html += '<td style="padding:12px">'+s.section+'</td>';
-    html += '<td style="padding:12px;text-align:center"><span style="background:rgba(52,152,219,0.1);color:#3498db;padding:4px 8px;border-radius:4px;font-size:12px">'+enrolledIn+' courses</span></td>';
-    html += '<td style="padding:12px;text-align:center"><span style="background:#d4edda;color:#155724;padding:4px 8px;border-radius:4px;font-size:12px">Active</span></td>';
-    html += '<td style="padding:12px;text-align:center">';
-    html += '<button onclick="viewStudentProfile('+i+')" style="background:none;border:none;cursor:pointer;font-size:16px;margin:0 4px" title="View">👁</button>';
-    html += '<button onclick="editStudentMember('+i+')" style="background:none;border:none;cursor:pointer;font-size:16px;margin:0 4px" title="Edit">✏️</button>';
-    html += '<button onclick="removeStudentMember('+i+')" style="background:none;border:none;cursor:pointer;font-size:16px;margin:0 4px" title="Remove">✕</button>';
-    html += '</td></tr>';
+    var enrolledIn=DB.courses.filter(function(c,idx){return s.courses.indexOf(idx)>-1;}).length;
+    html+='<tr><td>'+(i+1)+'</td>';
+    html+='<td><strong>'+s.ln+', '+s.fn+'</strong> '+s.mi+'</td>';
+    html+='<td style="font-family:\'JetBrains Mono\',monospace;font-size:11px">'+s.sid+'</td>';
+    html+='<td><a href="mailto:'+s.email+'" style="color:var(--accent)">'+s.email+'</a></td>';
+    html+='<td>'+s.year+'</td>';
+    html+='<td>'+s.section+'</td>';
+    html+='<td><span class="badge bg-blue">'+enrolledIn+' courses</span></td>';
+    html+='<td><span class="status-badge active">Active</span></td>';
+    html+='<td><div class="td-actions">';
+    html+='<button class="btn btn-sm" onclick="alert(\'View: '+s.ln+', '+s.fn+'\')" title="View">👁</button>';
+    html+='<button class="btn btn-sm" onclick="alert(\'Edit: '+s.ln+', '+s.fn+'\')" title="Edit">✏️</button>';
+    html+='<button class="btn btn-danger btn-sm" onclick="alert(\'Remove: '+s.ln+', '+s.fn+'\')" title="Remove">✕</button>';
+    html+='</div></td></tr>';
   });
   
-  document.getElementById('admin-students-list').innerHTML = html || '<tr><td colspan="9" style="padding:20px;text-align:center;color:var(--text3)">No students found.</td></tr>';
-  document.getElementById('admin-student-count').textContent = DB.students.length;
-}
-
-function filterStudentList(query) {
-  var rows = document.querySelectorAll('#admin-students-list tr');
-  rows.forEach(function(row) {
-    var text = row.textContent.toLowerCase();
-    row.style.display = text.includes(query.toLowerCase()) ? '' : 'none';
-  });
-}
-
-function viewStudentProfile(index) {
-  var s = DB.students[index];
-  var enrolledCourses = DB.courses.filter(function(c, idx){return s.courses.indexOf(idx) > -1;});
+  html+='</tbody></table></div>';
   
-  var html = '';
-  html += '<div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:20px">';
-  html += '<div style="flex:1">';
-  html += '<h2 style="margin:0 0 5px 0;color:var(--text)">'+s.ln+', '+s.fn+' '+s.mi+'</h2>';
-  html += '<div style="color:var(--text3);font-size:13px">'+s.year+' Year, Section '+s.section+'</div>';
-  html += '</div>';
-  html += '<div style="width:80px;height:80px;background:linear-gradient(135deg, #52b788, #40916c);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:24px">'+s.fn.charAt(0)+s.ln.charAt(0)+'</div>';
-  html += '</div>';
-  
-  html += '<div style="background:#f5f5f5;padding:15px;border-radius:8px;margin-bottom:15px">';
-  html += '<div style="margin-bottom:12px"><strong style="color:var(--text3);font-size:12px">STUDENT ID</strong><div style="color:var(--text);margin-top:4px;font-family:monospace">'+s.sid+'</div></div>';
-  html += '<div style="margin-bottom:12px"><strong style="color:var(--text3);font-size:12px">EMAIL</strong><div style="color:var(--text);margin-top:4px">'+s.email+'</div></div>';
-  html += '<div style="margin-bottom:12px"><strong style="color:var(--text3);font-size:12px">YEAR · SECTION</strong><div style="color:var(--text);margin-top:4px">'+s.year+' Year, Section '+s.section+'</div></div>';
-  html += '<div><strong style="color:var(--text3);font-size:12px">ENROLLED COURSES</strong><div style="color:var(--text);margin-top:4px">'+enrolledCourses.length+' courses</div></div>';
-  html += '</div>';
-  
-  if (enrolledCourses.length > 0) {
-    html += '<h3 style="margin:15px 0 10px 0;font-size:14px;color:var(--text)">Enrolled Courses</h3>';
-    html += '<div style="margin-bottom:15px">';
-    enrolledCourses.forEach(function(c) {
-      var courseIdx = DB.courses.indexOf(c);
-      var studentInCourse = c.students.find(function(st){return st.id === s.id;});
-      var grade = studentInCourse ? studentInCourse.grade : '-';
-      html += '<div style="padding:10px;background:#fff;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">';
-      html += '<div><strong style="color:var(--text)">'+c.code+'</strong><div style="font-size:12px;color:var(--text3);margin-top:2px">'+c.name+'</div></div>';
-      html += '<div style="text-align:right"><strong style="color:var(--maroon);font-size:14px">'+grade+'</strong><div style="font-size:11px;color:var(--text3)">Grade</div></div>';
-      html += '</div>';
-    });
-    html += '</div>';
-  }
-  
-  html += '<div style="display:flex;gap:10px">';
-  html += '<button onclick="closeStudentProfile(); editStudentMember('+index+')" style="flex:1;padding:10px;background:var(--maroon);color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600">Edit Student</button>';
-  html += '<button onclick="closeStudentProfile()" style="flex:1;padding:10px;background:transparent;border:1px solid var(--border);color:var(--text);border-radius:6px;cursor:pointer;font-weight:600">Close</button>';
-  html += '</div>';
-  
-  document.getElementById('facultyProfileContent').innerHTML = html;
-  document.getElementById('facultyProfileModal').style.display = 'block';
-}
-
-function closeStudentProfile() {
-  document.getElementById('facultyProfileModal').style.display = 'none';
-}
-
-function editStudentMember(index) {
-  // Placeholder for student edit functionality
-  toast('Student edit modal would open here.', 'info');
-}
-
-function removeStudentMember(index) {
-  if (confirm('Are you sure you want to remove this student?')) {
-    DB.students.splice(index, 1);
-    toast('Student removed.', 'ok');
-    renderAdminStudents();
-  }
+  document.getElementById('admin-students-list').innerHTML=html||'<div class="empty">No students.</div>';
 }
 
 function renderAdminEnrollment(){
-  renderEnrollmentByCoursView();
-  renderEnrollmentByStudentView();
-}
-
-var adminEnrollmentCurrentView = 'course';
-
-function setEnrollmentView(view) {
-  adminEnrollmentCurrentView = view;
-  var courseContainer = document.getElementById('enrollment-course-container');
-  var studentContainer = document.getElementById('enrollment-student-container');
-  
-  if (view === 'course') {
-    courseContainer.style.display = 'block';
-    studentContainer.style.display = 'none';
-    renderEnrollmentByCoursView();
-  } else {
-    courseContainer.style.display = 'none';
-    studentContainer.style.display = 'block';
-    renderEnrollmentByStudentView();
-  }
-}
-
-function renderEnrollmentByCoursView() {
-  var html = '<div class="card"><div class="card-hd"><h3>Enrollment by Course</h3></div><div style="padding:16px">';
-  html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:15px;margin-bottom:20px">';
+  var html='<div><h4 style="margin:0 0 16px 0">Enrollment by Course</h4>';
+  html+='<div class="enrollment-stats">';
   
   DB.courses.forEach(function(c, i){
-    var enroll = c.students.length;
-    var capacity = 30;
-    var percent = Math.round(enroll / capacity * 100);
-    var statusColor = enroll >= 25 ? '#dc3545' : enroll >= 15 ? '#ffc107' : '#28a745';
-    var statusText = enroll >= 25 ? 'Full' : enroll >= 15 ? 'Nearly Full' : 'Available';
-    
-    html += '<div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:15px">';
-    html += '<div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:10px">';
-    html += '<div><strong style="color:var(--text);font-size:14px">'+c.code+'</strong><div style="font-size:12px;color:var(--text3);margin-top:2px">'+c.name+'</div></div>';
-    html += '<div style="background:'+statusColor+';color:#fff;padding:4px 8px;border-radius:4px;font-size:11px;font-weight:600">'+enroll+'/'+capacity+'</div>';
-    html += '</div>';
-    html += '<div style="background:#f5f5f5;height:6px;border-radius:3px;overflow:hidden;margin-bottom:8px">';
-    html += '<div style="height:100%;background:'+statusColor+';width:'+percent+'%"></div>';
-    html += '</div>';
-    html += '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text3)">';
-    html += '<span>'+percent+'% Capacity</span>';
-    html += '<span>'+statusText+'</span>';
-    html += '</div>';
-    html += '</div>';
+    var enroll=c.students.length;
+    var capacity=30;
+    var percent=Math.round(enroll/capacity*100);
+    html+='<div class="enrollment-card">';
+    html+='<div class="enrollment-header"><strong>'+c.code+'</strong><span class="enrollment-count">'+enroll+'/'+capacity+'</span></div>';
+    html+='<div class="enrollment-name">'+c.name+'</div>';
+    html+='<div class="enrollment-bar"><div class="enrollment-fill" style="width:'+percent+'%;background:'+( enroll>=25?'var(--red)':enroll>=15?'var(--amber)':'var(--green)')+'"></div></div>';
+    html+='<div class="enrollment-footer"><span>'+percent+'% Capacity</span><span>Section '+c.section.substring(0,5)+'</span></div>';
+    html+='</div>';
   });
   
-  html += '</div>';
-  html += '<div style="background:#f5f5f5;padding:15px;border-radius:8px;text-align:center;color:var(--text3);font-size:13px">';
-  var totalEnroll = DB.courses.reduce(function(sum,c){return sum+c.students.length;},0);
-  var avgEnroll = Math.round(totalEnroll/DB.courses.length);
-  html += '<div style="margin-bottom:8px"><strong style="color:var(--text)">Total Enrollments:</strong> '+totalEnroll+'</div>';
-  html += '<div><strong style="color:var(--text)">Average per Course:</strong> '+avgEnroll+'</div>';
-  html += '</div></div></div>';
+  html+='</div>';
+  html+='<div style="margin-top:20px;padding:16px;background:var(--bg2);border-radius:8px;text-align:center;color:var(--text3)">';
+  html+='<strong>Total Enrollments:</strong> '+DB.courses.reduce(function(sum,c){return sum+c.students.length;},0)+'<br>';
+  html+='<strong>Average per Course:</strong> '+Math.round(DB.courses.reduce(function(sum,c){return sum+c.students.length;},0)/DB.courses.length);
+  html+='</div></div>';
   
-  document.getElementById('admin-enrollment-list').innerHTML = html;
+  var el=document.getElementById('admin-enrollment-list');
+  if(el) el.innerHTML=html;
 }
-
-function renderEnrollmentByStudentView() {
-  var html = '<div class="card"><div class="card-hd"><h3>Enrollment by Student</h3></div><div style="padding:16px">';
-  html += '<table style="width:100%;border-collapse:collapse;font-size:13px">';
-  html += '<thead><tr style="border-bottom:2px solid var(--border);background:#f5f5f5">';
-  html += '<th style="padding:12px;text-align:left;font-weight:600">#</th>';
-  html += '<th style="padding:12px;text-align:left;font-weight:600">Student Name</th>';
-  html += '<th style="padding:12px;text-align:center;font-weight:600">Program</th>';
-  html += '<th style="padding:12px;text-align:center;font-weight:600">Courses Enrolled</th>';
-  html += '<th style="padding:12px;text-align:center;font-weight:600">Status</th>';
-  html += '</tr></thead><tbody>';
-  
-  DB.students.forEach(function(s, i){
-    var enrolledCount = s.courses.length;
-    html += '<tr style="border-bottom:1px solid var(--border)">';
-    html += '<td style="padding:12px">'+(i+1)+'</td>';
-    html += '<td style="padding:12px"><strong>'+s.ln+', '+s.fn+' '+s.mi+'</strong><div style="font-size:11px;color:var(--text3);margin-top:2px">'+s.sid+'</div></td>';
-    html += '<td style="padding:12px;text-align:center">'+s.year+' Year</td>';
-    html += '<td style="padding:12px;text-align:center"><span style="background:rgba(52,152,219,0.1);color:#3498db;padding:4px 8px;border-radius:4px">'+enrolledCount+' courses</span></td>';
-    html += '<td style="padding:12px;text-align:center"><span style="background:#d4edda;color:#155724;padding:4px 8px;border-radius:4px;font-size:11px">Active</span></td>';
-    html += '</tr>';
-  });
-  
-  html += '</tbody></table></div></div>';
-  
-  document.getElementById('admin-enrollment-students').innerHTML = html;
-}
-
-var adminDesignations = [
-  {role:'Department Chair',dept:'College of Computer Studies',faculty:3,color:'#8b1a2a'},
-  {role:'Faculty Coordinator',dept:'College of Computer Studies',faculty:2,color:'#c8932a'},
-  {role:'Academic Adviser',dept:'College of Computer Studies',faculty:5,color:'#4a7c59'},
-  {role:'Laboratory Instructor',dept:'College of Computer Studies',faculty:8,color:'#5b9aa0'},
-  {role:'Curriculum Specialist',dept:'College of Computer Studies',faculty:1,color:'#d4a574'}
-];
-
-var adminPrograms = [
-  {code:'BSCS',name:'Bachelor of Science in Computer Science',units:120,semesters:8,active:34},
-  {code:'BSIS',name:'Bachelor of Science in Information Systems',units:118,semesters:8,active:28},
-  {code:'BSIT',name:'Bachelor of Science in Information Technology',units:119,semesters:8,active:22}
-];
 
 function renderAdminDesignation(){
-  // Render designation cards
-  var html = '';
-  adminDesignations.forEach(function(d){
-    html += '<div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);border-left:4px solid '+d.color+';overflow:hidden">';
-    html += '<div style="padding:15px">';
-    html += '<h4 style="margin:0 0 8px 0;font-size:14px;color:var(--text)">'+d.role+'</h4>';
-    html += '<div style="font-size:12px;color:var(--text3);margin-bottom:10px">'+d.dept+'</div>';
-    html += '<div style="font-size:16px;font-weight:700;color:var(--maroon);margin-bottom:10px">'+d.faculty+'</div>';
-    html += '<div style="font-size:11px;color:var(--text3)">Faculty members</div>';
-    html += '</div>';
-    html += '</div>';
+  var designations=[
+    {role:'Department Chair',dept:'College of Computer Studies',faculty:3,color:'#8b1a2a'},
+    {role:'Faculty Coordinator',dept:'College of Computer Studies',faculty:2,color:'#c8932a'},
+    {role:'Academic Adviser',dept:'College of Computer Studies',faculty:5,color:'#4a7c59'},
+    {role:'Laboratory Instructor',dept:'College of Computer Studies',faculty:8,color:'#5b9aa0'},
+    {role:'Curriculum Specialist',dept:'College of Computer Studies',faculty:1,color:'#d4a574'}
+  ];
+  
+  var html='<div class="designation-list">';
+  designations.forEach(function(d){
+    html+='<div class="designation-card" style="border-left:4px solid '+d.color+'">';
+    html+='<div class="designation-header">';
+    html+='<h4>'+d.role+'</h4>';
+    html+='<span class="faculty-count">'+d.faculty+' Faculty</span>';
+    html+='</div>';
+    html+='<div class="designation-dept">'+d.dept+'</div>';
+    html+='<div class="designation-actions">';
+    html+='<button class="btn btn-sm" onclick="alert(\'View assignments for '+d.role+'\')" title="View">View</button>';
+    html+='<button class="btn btn-sm" onclick="alert(\'Edit '+d.role+'\')" title="Edit">Edit</button>';
+    html+='</div>';
+    html+='</div>';
   });
+  html+='</div>';
   
-  document.getElementById('admin-designation-list').innerHTML = html;
-  
-  // Render designation table
-  var tableHtml = '';
-  adminDesignations.forEach(function(d){
-    tableHtml += '<tr style="border-bottom:1px solid var(--border)">';
-    tableHtml += '<td style="padding:12px">'+d.role+'</td>';
-    tableHtml += '<td style="padding:12px">'+d.dept+'</td>';
-    tableHtml += '<td style="padding:12px;text-align:center"><span style="background:rgba(139,26,42,0.1);color:var(--maroon);padding:4px 8px;border-radius:4px">'+d.faculty+'</span></td>';
-    tableHtml += '<td style="padding:12px;text-align:center">';
-    tableHtml += '<button onclick="alert(\'View assignments\')" style="background:none;border:none;cursor:pointer;margin:0 4px">👁</button>';
-    tableHtml += '<button onclick="alert(\'Edit designation\')" style="background:none;border:none;cursor:pointer;margin:0 4px">✏️</button>';
-    tableHtml += '</td></tr>';
-  });
-  
-  document.getElementById('admin-designation-table').innerHTML = tableHtml;
-}
-
-function openAddDesignationModal() {
-  var options = '';
-  USERS.forEach(function(f, i){
-    options += '<option value="'+i+'">'+f.name+'</option>';
-  });
-  document.getElementById('newDesignationFaculty').innerHTML = options;
-  document.getElementById('addDesignationModal').style.display = 'flex';
-}
-
-function closeAddDesignationModal() {
-  document.getElementById('addDesignationModal').style.display = 'none';
-  document.getElementById('newDesignationRole').value = '';
-  document.getElementById('newDesignationDept').value = 'Select Department';
-}
-
-function saveDesignation() {
-  var role = document.getElementById('newDesignationRole').value;
-  var dept = document.getElementById('newDesignationDept').value;
-  
-  if (!role || dept === 'Select Department') {
-    toast('Please fill in all required fields.', 'error');
-    return;
-  }
-  
-  adminDesignations.push({role: role, dept: dept, faculty: 1, color: '#'+Math.floor(Math.random()*16777215).toString(16)});
-  toast('Designation added successfully!', 'ok');
-  closeAddDesignationModal();
-  renderAdminDesignation();
+  document.getElementById('admin-designation-list').innerHTML=html;
 }
 
 function renderAdminCurriculum(){
-  var html = '';
-  adminPrograms.forEach(function(p){
-    html += '<div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">';
-    html += '<div style="height:80px;background:linear-gradient(135deg, #8b1a2a, #b52235);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:18px">'+p.code+'</div>';
-    html += '<div style="padding:15px">';
-    html += '<h4 style="margin:0 0 8px 0;font-size:14px;color:var(--text)">'+p.name+'</h4>';
-    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;font-size:12px">';
-    html += '<div><strong style="color:var(--text3)">UNITS</strong><div style="color:var(--text);font-weight:700;margin-top:2px">'+p.units+'</div></div>';
-    html += '<div><strong style="color:var(--text3)">SEMESTERS</strong><div style="color:var(--text);font-weight:700;margin-top:2px">'+p.semesters+'</div></div>';
-    html += '</div>';
-    html += '<div style="background:#f5f5f5;padding:10px;border-radius:6px;margin-bottom:12px;font-size:13px">';
-    html += '<strong style="color:var(--text)">'+p.active+'</strong> <span style="color:var(--text3)">Active Courses</span>';
-    html += '</div>';
-    html += '<div style="display:flex;gap:8px">';
-    html += '<button onclick="alert(\'View curriculum for '+p.code+'\')" style="flex:1;padding:8px;background:var(--maroon);color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600">View</button>';
-    html += '<button onclick="alert(\'Edit '+p.code+'\')" style="flex:1;padding:8px;background:transparent;border:1px solid var(--border);color:var(--text);border-radius:4px;cursor:pointer;font-size:12px;font-weight:600">Edit</button>';
-    html += '</div>';
-    html += '</div>';
-    html += '</div>';
+  var programs=[
+    {code:'BSCS',name:'Bachelor of Science in Computer Science',units:120,semesters:8,active:34},
+    {code:'BSIS',name:'Bachelor of Science in Information Systems',units:118,semesters:8,active:28},
+    {code:'BSIT',name:'Bachelor of Science in Information Technology',units:119,semesters:8,active:22}
+  ];
+  
+  var html='<div class="curriculum-list">';
+  programs.forEach(function(p){
+    html+='<div class="curriculum-card">';
+    html+='<div class="curriculum-header">';
+    html+='<h4>'+p.code+' - '+p.name+'</h4>';
+    html+='<span class="active-badge">'+p.active+' Active</span>';
+    html+='</div>';
+    html+='<div class="curriculum-details">';
+    html+='<div class="detail-item"><strong>Total Units:</strong> '+p.units+'</div>';
+    html+='<div class="detail-item"><strong>Semesters:</strong> '+p.semesters+'</div>';
+    html+='<div class="detail-item"><strong>Active Courses:</strong> '+p.active+'</div>';
+    html+='</div>';
+    html+='<div class="curriculum-actions">';
+    html+='<button class="btn btn-sm" onclick="alert(\'View curriculum for '+p.code+'\')" title="View">View</button>';
+    html+='<button class="btn btn-sm" onclick="alert(\'Edit '+p.code+'\')" title="Edit">Edit</button>';
+    html+='<button class="btn btn-sm" onclick="alert(\'Export '+p.code+'\')" title="Export">Export</button>';
+    html+='</div>';
+    html+='</div>';
   });
+  html+='</div>';
   
-  document.getElementById('admin-curriculum-list').innerHTML = html;
+  var el=document.getElementById('admin-curriculum-list');
+  if(el) el.innerHTML=html;
+}
+// ================================================================
+// ADMIN UPGRADE — FULL FEATURE IMPLEMENTATION
+// UPHSD CCS Faculty Portal — Admin Module
+// ================================================================
+
+// ================================================================
+// ADMIN DATA STORE
+// ================================================================
+var ADMIN_DB = {
+  faculty: [
+    { id: 1, name: 'Dr. Homer T. Favenir', email: 'hfavenir@uphsd.edu.ph', phone: '+63 912 345 6789', dept: 'College of Computer Studies', title: 'Associate Professor', spec: 'HCI, UX Research, Web Technologies', status: 'Active', years: 8, bio: 'Specializes in Human Computer Interaction and UX design with extensive research publications.', courses: ['IT411', 'IT431', 'GE201'] },
+    { id: 2, name: 'Dr. Eleanor Vallarta', email: 'evallarta@uphsd.edu.ph', phone: '+63 917 234 5678', dept: 'College of Computer Studies', title: 'Assistant Professor', spec: 'Network Security, Systems Architecture', status: 'Active', years: 5, bio: 'Expert in network security protocols and distributed systems design.', courses: ['IT421', 'CS312'] },
+    { id: 3, name: 'Prof. Julius Thomas', email: 'jthomas@uphsd.edu.ph', phone: '+63 918 345 6789', dept: 'IT Department', title: 'Instructor II', spec: 'Data Analytics, Machine Learning', status: 'Active', years: 3, bio: 'Data science practitioner with industry background in analytics and AI.', courses: ['CS312'] },
+    { id: 4, name: 'Dr. Maria Santos', email: 'msantos@uphsd.edu.ph', phone: '+63 916 456 7890', dept: 'General Education', title: 'Professor', spec: 'Technical Writing, Ethics', status: 'On Leave', years: 12, bio: 'Senior faculty member specializing in academic writing and professional ethics.', courses: ['GE201'] },
+    { id: 5, name: 'Prof. Raymond Cruz', email: 'rcruz@uphsd.edu.ph', phone: '+63 915 567 8901', dept: 'IT Department', title: 'Instructor I', spec: 'Mobile Development, UI Design', status: 'Active', years: 2, bio: 'Mobile app developer turned educator, passionate about teaching modern UI frameworks.', courses: [] }
+  ],
+  designations: [
+    { id: 1, facultyId: 1, role: 'Department Chair', dept: 'College of Computer Studies', since: '2022-06', notes: 'Oversees CCS curriculum and faculty development' },
+    { id: 2, facultyId: 2, role: 'Faculty Coordinator', dept: 'IT Security Cluster', since: '2023-01', notes: 'Coordinates IT security and networking subjects' },
+    { id: 3, facultyId: 3, role: 'Laboratory Instructor', dept: 'Data Science Lab', since: '2023-06', notes: 'Manages data science laboratory activities' },
+    { id: 4, facultyId: 1, role: 'Academic Adviser', dept: 'BSCS 2nd Year', since: '2021-06', notes: 'Advises 2nd year BSCS students on academic matters' },
+    { id: 5, facultyId: 5, role: 'Curriculum Specialist', dept: 'Mobile Track', since: '2024-01', notes: 'Reviews and updates mobile development curriculum' }
+  ],
+  programs: [
+    { id: 1, code: 'BSCS', name: 'Bachelor of Science in Computer Science', units: 120, semesters: 8, minGrade: 75, dean: 'Dr. Homer T. Favenir', subjects: ['CS101','CS201','CS301','IT411','CS312','IT421','IT431','GE201'] },
+    { id: 2, code: 'BSIS', name: 'Bachelor of Science in Information Systems', units: 118, semesters: 8, minGrade: 75, dean: 'Dr. Eleanor Vallarta', subjects: ['IS101','IS201','IS301','IS401'] },
+    { id: 3, code: 'BSIT', name: 'Bachelor of Science in Information Technology', units: 119, semesters: 8, minGrade: 75, dean: 'Prof. Julius Thomas', subjects: ['IT101','IT201','IT301','IT401'] }
+  ],
+  enrollmentPeriods: [
+    { id: 1, sem: '1st Semester 2025–2026', start: '2025-06-01', end: '2025-06-30', status: 'Closed' },
+    { id: 2, sem: '2nd Semester 2025–2026', start: '2025-11-01', end: '2025-11-30', status: 'Open' }
+  ],
+  announcements: [
+    { id: 1, title: 'Enrollment Period Open', body: '2nd semester enrollment is now open. Please remind all students to enroll before the deadline.', date: '2025-11-01', priority: 'high' },
+    { id: 2, title: 'Grade Submission Deadline', body: 'All faculty must submit grades for 1st semester by December 15, 2025.', date: '2025-11-20', priority: 'medium' }
+  ]
+};
+
+var adminCurrentPage = 'dashboard';
+var adminFacultyView = 'card';
+var adminSelectedFacultyId = null;
+
+// ================================================================
+// ADMIN INIT
+// ================================================================
+function initAdmin() {
+  updateAdminClock();
+  setInterval(updateAdminClock, 1000);
+  renderAdminDashboard();
 }
 
-function openAddCurriculumModal() {
-  document.getElementById('addCurriculumModal').style.display = 'flex';
+function updateAdminClock() {
+  var now = new Date();
+  var dateEl = document.getElementById('adminTopbarDate');
+  var timeEl = document.getElementById('adminTopbarTime');
+  if (dateEl) dateEl.textContent = now.toLocaleDateString('en-PH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  if (timeEl) timeEl.textContent = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
 }
 
-function closeAddCurriculumModal() {
-  document.getElementById('addCurriculumModal').style.display = 'none';
-  document.getElementById('newProgramName').value = '';
-  document.getElementById('newProgramCode').value = '';
-  document.getElementById('newProgramUnits').value = '';
-  document.getElementById('newProgramSemesters').value = '';
-}
-
-function saveProgram() {
-  var name = document.getElementById('newProgramName').value;
-  var code = document.getElementById('newProgramCode').value;
-  var units = parseInt(document.getElementById('newProgramUnits').value) || 0;
-  var semesters = parseInt(document.getElementById('newProgramSemesters').value) || 0;
-  
-  if (!name || !code || !units || !semesters) {
-    toast('Please fill in all required fields.', 'error');
-    return;
+// Override switchAdminPage to also update topbar title
+function switchAdminPage(page, el) {
+  if (el) {
+    document.querySelectorAll('#adminSidebar .sb-item').forEach(function(item) { item.classList.remove('active'); });
+    el.classList.add('active');
   }
-  
-  adminPrograms.push({code: code, name: name, units: units, semesters: semesters, active: 0});
-  toast('Program added successfully!', 'ok');
-  closeAddCurriculumModal();
-  renderAdminCurriculum();
+  document.querySelectorAll('[id^="admin-page-"]').forEach(function(p) { p.style.display = 'none'; });
+  var targetPage = document.getElementById('admin-page-' + page);
+  if (targetPage) targetPage.style.display = 'block';
+
+  var titles = {
+    dashboard: 'Admin Dashboard',
+    faculty: 'Faculty Management',
+    students: 'Student Management',
+    enrollment: 'Enrollment Management',
+    designation: 'Faculty Designation',
+    curriculum: 'Curriculum Management'
+  };
+  var titleEl = document.getElementById('adminTopbarTitle');
+  if (titleEl) titleEl.textContent = titles[page] || 'Admin';
+
+  adminCurrentPage = page;
+  switch (page) {
+    case 'dashboard': renderAdminDashboard(); break;
+    case 'faculty': renderAdminFacultyPage(); break;
+    case 'students': renderAdminStudentsPage(); break;
+    case 'enrollment': renderAdminEnrollmentPage(); break;
+    case 'designation': renderAdminDesignationPage(); break;
+    case 'curriculum': renderAdminCurriculumPage(); break;
+  }
 }
 
-function showProfileMenu() {
-  toast('Administrator Account', 'info');
+// ================================================================
+// ADMIN DASHBOARD
+// ================================================================
+function renderAdminDashboard() {
+  var container = document.getElementById('admin-page-dashboard');
+  if (!container) return;
+
+  var totalFaculty = ADMIN_DB.faculty.length;
+  var activeFaculty = ADMIN_DB.faculty.filter(function(f) { return f.status === 'Active'; }).length;
+  var totalStudents = DB.students.length;
+  var activeCourses = DB.courses.length;
+  var totalEnrollments = DB.courses.reduce(function(sum, c) { return sum + c.students.length; }, 0);
+  var totalGrade = 0, gradeCount = 0;
+  DB.courses.forEach(function(course) {
+    course.students.forEach(function(s) {
+      var c = compute(s, course.weeks);
+      totalGrade += c.grade; gradeCount++;
+    });
+  });
+  var avgGrade = gradeCount ? (totalGrade / gradeCount).toFixed(1) : 0;
+
+  container.innerHTML = `
+    <div class="admin-dash-welcome">
+      <div>
+        <h2 class="admin-welcome-title">Welcome back, Administrator</h2>
+        <p class="admin-welcome-sub">Here's an overview of UPHSD — College of Computer Studies</p>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary btn-sm" onclick="openAdminModal('announcement')">📢 Post Announcement</button>
+        <button class="btn btn-sm" onclick="exportAdminReport()">📥 Export Report</button>
+      </div>
+    </div>
+
+    <div class="admin-stat-grid">
+      <div class="admin-stat-card admin-stat-maroon">
+        <div class="admin-stat-icon">👨‍🏫</div>
+        <div class="admin-stat-body">
+          <div class="admin-stat-num">${totalFaculty}</div>
+          <div class="admin-stat-lbl">Total Faculty</div>
+          <div class="admin-stat-sub">${activeFaculty} active · ${totalFaculty - activeFaculty} on leave</div>
+        </div>
+      </div>
+      <div class="admin-stat-card admin-stat-gold">
+        <div class="admin-stat-icon">🎓</div>
+        <div class="admin-stat-body">
+          <div class="admin-stat-num">${totalStudents}</div>
+          <div class="admin-stat-lbl">Total Students</div>
+          <div class="admin-stat-sub">${totalEnrollments} total enrollments</div>
+        </div>
+      </div>
+      <div class="admin-stat-card admin-stat-green">
+        <div class="admin-stat-icon">📚</div>
+        <div class="admin-stat-body">
+          <div class="admin-stat-num">${activeCourses}</div>
+          <div class="admin-stat-lbl">Active Courses</div>
+          <div class="admin-stat-sub">This semester</div>
+        </div>
+      </div>
+      <div class="admin-stat-card admin-stat-blue">
+        <div class="admin-stat-icon">📊</div>
+        <div class="admin-stat-body">
+          <div class="admin-stat-num">${avgGrade}</div>
+          <div class="admin-stat-lbl">System Avg Grade</div>
+          <div class="admin-stat-sub">Across all courses</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="admin-dash-grid">
+      <div>
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-hd">
+            <div class="card-hd-l"><h3>Course Performance Overview</h3><p>Average grades across all active courses</p></div>
+          </div>
+          ${renderAdminCoursePerf()}
+        </div>
+        <div class="card">
+          <div class="card-hd">
+            <div class="card-hd-l"><h3>Quick Actions</h3><p>Common administrative tasks</p></div>
+          </div>
+          <div class="admin-quick-actions">
+            <button class="admin-qa-btn" onclick="switchAdminPage('faculty', document.querySelector('#adminSidebar .sb-item:nth-child(2)'))">
+              <span class="admin-qa-icon">👨‍🏫</span>
+              <span>Manage Faculty</span>
+            </button>
+            <button class="admin-qa-btn" onclick="switchAdminPage('students', document.querySelector('#adminSidebar .sb-item:nth-child(3)'))">
+              <span class="admin-qa-icon">🎓</span>
+              <span>Manage Students</span>
+            </button>
+            <button class="admin-qa-btn" onclick="switchAdminPage('enrollment', document.querySelector('#adminSidebar .sb-item:nth-child(5)'))">
+              <span class="admin-qa-icon">📋</span>
+              <span>Enrollment</span>
+            </button>
+            <button class="admin-qa-btn" onclick="switchAdminPage('designation', document.querySelector('#adminSidebar .sb-item:nth-child(6)'))">
+              <span class="admin-qa-icon">🏅</span>
+              <span>Designations</span>
+            </button>
+            <button class="admin-qa-btn" onclick="switchAdminPage('curriculum', document.querySelector('#adminSidebar .sb-item:nth-child(7)'))">
+              <span class="admin-qa-icon">📖</span>
+              <span>Curriculum</span>
+            </button>
+            <button class="admin-qa-btn" onclick="exportAdminReport()">
+              <span class="admin-qa-icon">📥</span>
+              <span>Export Report</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-hd">
+            <div class="card-hd-l"><h3>Faculty Status</h3><p>Current active/leave breakdown</p></div>
+          </div>
+          ${renderAdminFacultyStatus()}
+        </div>
+        <div class="card">
+          <div class="card-hd">
+            <div class="card-hd-l"><h3>System Announcements</h3></div>
+            <div class="card-hd-r"><button class="btn btn-sm btn-primary" onclick="openAdminModal('announcement')">+ Post</button></div>
+          </div>
+          <div id="admin-announcements-list">
+            ${ADMIN_DB.announcements.map(function(a) {
+              return `<div class="admin-announcement priority-${a.priority}">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start">
+                  <h4>${a.title}</h4>
+                  <span class="badge ${a.priority === 'high' ? 'bg-red' : 'bg-amber'}" style="font-size:10px;flex-shrink:0">${a.priority}</span>
+                </div>
+                <p>${a.body}</p>
+                <div class="admin-ann-footer">${new Date(a.date).toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'})}</div>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
 }
+
+function renderAdminCoursePerf() {
+  return DB.courses.map(function(c) {
+    var avg = 0;
+    if (c.students.length) {
+      c.students.forEach(function(s) { avg += compute(s, c.weeks).grade; });
+      avg = Math.round(avg / c.students.length);
+    }
+    var col = avg >= 90 ? 'var(--green)' : avg >= 80 ? 'var(--accent)' : avg >= 70 ? 'var(--amber)' : 'var(--red)';
+    return `<div class="perf-bar">
+      <div class="perf-bar-label">
+        <span>${c.code} — ${c.name.substring(0, 30)}</span>
+        <span style="font-weight:700;color:${col}">${avg}</span>
+      </div>
+      <div class="perf-bar-track"><div class="perf-bar-fill" style="width:${avg}%;background:${col}"></div></div>
+    </div>`;
+  }).join('') || '<div class="empty">No courses.</div>';
+}
+
+function renderAdminFacultyStatus() {
+  var active = ADMIN_DB.faculty.filter(function(f) { return f.status === 'Active'; });
+  var onLeave = ADMIN_DB.faculty.filter(function(f) { return f.status === 'On Leave'; });
+  var html = active.concat(onLeave).map(function(f) {
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--surface2);border-radius:8px;margin-bottom:6px">
+      <div>
+        <div style="font-size:12.5px;font-weight:700">${f.name}</div>
+        <div style="font-size:11px;color:var(--text3)">${f.title} · ${f.dept.substring(0,20)}</div>
+      </div>
+      <span class="badge ${f.status === 'Active' ? 'bg-green' : 'bg-amber'}">${f.status}</span>
+    </div>`;
+  }).join('');
+  return html || '<div class="empty">No faculty data.</div>';
+}
+
+// ================================================================
+// ADMIN FACULTY PAGE — FULL CRUD
+// ================================================================
+function renderAdminFacultyPage() {
+  var container = document.getElementById('admin-page-faculty');
+  if (!container) return;
+
+  container.innerHTML = `
+    <div class="page-hd">
+      <div>
+        <h2>Faculty Management</h2>
+        <p>Manage all faculty members, their profiles and course assignments</p>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-sm" onclick="adminSetFacultyView('card')" id="admin-fc-card-btn">Card View</button>
+        <button class="btn btn-sm" onclick="adminSetFacultyView('list')" id="admin-fc-list-btn">List View</button>
+        <button class="btn btn-primary btn-sm" onclick="openAdminFacultyModal()">+ Add Faculty</button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px">
+        <div class="form-row" style="margin:0">
+          <label>Search Faculty</label>
+          <input type="text" id="admin-faculty-search" placeholder="Name, email, specialization..." oninput="adminFilterFaculty()"/>
+        </div>
+        <div class="form-row" style="margin:0">
+          <label>Department</label>
+          <div class="dropdown-select-wrap">
+            <select id="admin-faculty-dept" onchange="adminFilterFaculty()">
+              <option value="">All Departments</option>
+              <option value="College of Computer Studies">College of Computer Studies</option>
+              <option value="IT Department">IT Department</option>
+              <option value="General Education">General Education</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row" style="margin:0">
+          <label>Status</label>
+          <div class="dropdown-select-wrap">
+            <select id="admin-faculty-status-filter" onchange="adminFilterFaculty()">
+              <option value="">All Status</option>
+              <option value="Active">Active</option>
+              <option value="On Leave">On Leave</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="admin-faculty-view-container"></div>
+  `;
+
+  adminSetFacultyView('card');
+}
+
+function adminSetFacultyView(view) {
+  adminFacultyView = view;
+  var cardBtn = document.getElementById('admin-fc-card-btn');
+  var listBtn = document.getElementById('admin-fc-list-btn');
+  if (cardBtn) cardBtn.style.background = view === 'card' ? 'var(--accent)' : '';
+  if (cardBtn) cardBtn.style.color = view === 'card' ? '#fff' : '';
+  if (listBtn) listBtn.style.background = view === 'list' ? 'var(--accent)' : '';
+  if (listBtn) listBtn.style.color = view === 'list' ? '#fff' : '';
+  adminFilterFaculty();
+}
+
+function adminFilterFaculty() {
+  var search = (document.getElementById('admin-faculty-search') || {}).value || '';
+  var dept = (document.getElementById('admin-faculty-dept') || {}).value || '';
+  var status = (document.getElementById('admin-faculty-status-filter') || {}).value || '';
+  search = search.toLowerCase();
+
+  var filtered = ADMIN_DB.faculty.filter(function(f) {
+    var matchSearch = !search || f.name.toLowerCase().includes(search) || f.email.toLowerCase().includes(search) || f.spec.toLowerCase().includes(search);
+    var matchDept = !dept || f.dept === dept;
+    var matchStatus = !status || f.status === status;
+    return matchSearch && matchDept && matchStatus;
+  });
+
+  var container = document.getElementById('admin-faculty-view-container');
+  if (!container) return;
+
+  if (adminFacultyView === 'card') {
+    container.innerHTML = `<div class="admin-faculty-grid">${filtered.map(function(f) { return adminFacultyCard(f); }).join('')}</div>${filtered.length === 0 ? '<div class="empty">No faculty match your filters.</div>' : ''}`;
+  } else {
+    container.innerHTML = adminFacultyListTable(filtered);
+  }
+}
+
+function adminFacultyCard(f) {
+  var initials = f.name.split(' ').map(function(w) { return w[0]; }).join('').slice(0, 2).toUpperCase();
+  var courseCount = f.courses ? f.courses.length : 0;
+  return `
+    <div class="admin-faculty-card">
+      <div class="admin-fc-header">
+        <div class="admin-fc-avatar">${initials}</div>
+        <div class="admin-fc-meta">
+          <h4>${f.name}</h4>
+          <p>${f.title}</p>
+        </div>
+        <span class="badge ${f.status === 'Active' ? 'bg-green' : 'bg-amber'}">${f.status}</span>
+      </div>
+      <div class="admin-fc-body">
+        <div class="admin-fc-info"><span>🏫</span><span>${f.dept}</span></div>
+        <div class="admin-fc-info"><span>✉️</span><a href="mailto:${f.email}" style="color:var(--accent)">${f.email}</a></div>
+        <div class="admin-fc-info"><span>📱</span><span>${f.phone}</span></div>
+        <div class="admin-fc-info"><span>🎯</span><span>${f.spec}</span></div>
+        <div class="admin-fc-info"><span>📅</span><span>${f.years} year${f.years !== 1 ? 's' : ''} in service</span></div>
+        ${courseCount > 0 ? `<div class="admin-fc-info"><span>📚</span><span>${courseCount} course${courseCount !== 1 ? 's' : ''} assigned</span></div>` : ''}
+      </div>
+      <div class="admin-fc-footer">
+        <button class="btn btn-sm" onclick="viewAdminFacultyProfile(${f.id})">👁 View</button>
+        <button class="btn btn-sm" onclick="openAdminFacultyModal(${f.id})">✏️ Edit</button>
+        <button class="btn btn-sm btn-danger" onclick="confirmAdminDelete('faculty',${f.id},'${f.name}')">🗑</button>
+      </div>
+    </div>
+  `;
+}
+
+function adminFacultyListTable(data) {
+  var rows = data.map(function(f, i) {
+    return `<tr>
+      <td>${i + 1}</td>
+      <td><strong>${f.name}</strong></td>
+      <td>${f.title}</td>
+      <td><a href="mailto:${f.email}" style="color:var(--accent)">${f.email}</a></td>
+      <td>${f.dept}</td>
+      <td>${f.spec.substring(0, 30)}${f.spec.length > 30 ? '...' : ''}</td>
+      <td><span class="badge ${f.status === 'Active' ? 'bg-green' : 'bg-amber'}">${f.status}</span></td>
+      <td>
+        <div class="td-actions">
+          <button class="btn btn-sm" onclick="viewAdminFacultyProfile(${f.id})" title="View">👁</button>
+          <button class="btn btn-sm" onclick="openAdminFacultyModal(${f.id})" title="Edit">✏️</button>
+          <button class="btn btn-sm btn-danger" onclick="confirmAdminDelete('faculty',${f.id},'${f.name}')" title="Delete">🗑</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+  return `
+    <div class="card">
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Name</th><th>Title</th><th>Email</th><th>Department</th><th>Specialization</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody>${rows || '<tr><td colspan="8" class="empty">No faculty found.</td></tr>'}</tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function openAdminFacultyModal(id) {
+  var f = id ? ADMIN_DB.faculty.find(function(x) { return x.id === id; }) : null;
+  var title = f ? 'Edit Faculty: ' + f.name : 'Add New Faculty';
+
+  var modal = document.getElementById('admin-modal-overlay');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'admin-modal-overlay';
+    modal.className = 'overlay';
+    modal.onclick = function(e) { if (e.target === modal) closeAdminModal(); };
+    document.body.appendChild(modal);
+  }
+
+  modal.innerHTML = `
+    <div class="modal" style="width:600px">
+      <div class="modal-hd">
+        <h2>${title}</h2>
+        <button class="btn btn-sm" onclick="closeAdminModal()">✕ Close</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="adf-id" value="${f ? f.id : ''}"/>
+        <div class="form-grid">
+          <div class="form-row"><label>Full Name *</label><input id="adf-name" placeholder="Dr. Juan Dela Cruz" value="${f ? f.name : ''}"/></div>
+          <div class="form-row"><label>Title / Rank *</label><input id="adf-title" placeholder="Assistant Professor" value="${f ? f.title : ''}"/></div>
+        </div>
+        <div class="form-grid">
+          <div class="form-row"><label>Email *</label><input id="adf-email" type="email" placeholder="faculty@uphsd.edu.ph" value="${f ? f.email : ''}"/></div>
+          <div class="form-row"><label>Phone</label><input id="adf-phone" placeholder="+63 9xx xxx xxxx" value="${f ? f.phone : ''}"/></div>
+        </div>
+        <div class="form-grid">
+          <div class="form-row">
+            <label>Department *</label>
+            <select id="adf-dept">
+              <option ${(!f || f.dept === 'College of Computer Studies') ? 'selected' : ''}>College of Computer Studies</option>
+              <option ${(f && f.dept === 'IT Department') ? 'selected' : ''}>IT Department</option>
+              <option ${(f && f.dept === 'General Education') ? 'selected' : ''}>General Education</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>Status</label>
+            <select id="adf-status">
+              <option value="Active" ${(!f || f.status === 'Active') ? 'selected' : ''}>Active</option>
+              <option value="On Leave" ${(f && f.status === 'On Leave') ? 'selected' : ''}>On Leave</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-row"><label>Specialization</label><input id="adf-spec" placeholder="HCI, Web Technologies..." value="${f ? f.spec : ''}"/></div>
+          <div class="form-row"><label>Years in Service</label><input type="number" id="adf-years" min="0" value="${f ? f.years : 1}"/></div>
+        </div>
+        <div class="form-row"><label>Short Bio</label><textarea id="adf-bio" style="min-height:80px">${f ? f.bio : ''}</textarea></div>
+      </div>
+      <div class="modal-ft">
+        <button class="btn btn-danger" onclick="closeAdminModal()">Cancel</button>
+        <button class="btn btn-success" onclick="saveAdminFaculty()">💾 Save Faculty</button>
+      </div>
+    </div>
+  `;
+  modal.classList.add('open');
+}
+
+function saveAdminFaculty() {
+  var id = document.getElementById('adf-id').value;
+  var name = document.getElementById('adf-name').value.trim();
+  var title = document.getElementById('adf-title').value.trim();
+  var email = document.getElementById('adf-email').value.trim();
+  if (!name || !title || !email) { toast('Name, title, and email are required.', 'err'); return; }
+
+  if (id) {
+    var f = ADMIN_DB.faculty.find(function(x) { return x.id === parseInt(id); });
+    if (f) {
+      f.name = name; f.title = title; f.email = email;
+      f.phone = document.getElementById('adf-phone').value.trim();
+      f.dept = document.getElementById('adf-dept').value;
+      f.status = document.getElementById('adf-status').value;
+      f.spec = document.getElementById('adf-spec').value.trim();
+      f.years = parseInt(document.getElementById('adf-years').value) || 0;
+      f.bio = document.getElementById('adf-bio').value.trim();
+      toast('Faculty updated!', 'ok');
+    }
+  } else {
+    var newId = Math.max.apply(null, ADMIN_DB.faculty.map(function(x) { return x.id; }).concat([0])) + 1;
+    ADMIN_DB.faculty.push({
+      id: newId, name: name, title: title, email: email,
+      phone: document.getElementById('adf-phone').value.trim(),
+      dept: document.getElementById('adf-dept').value,
+      status: document.getElementById('adf-status').value,
+      spec: document.getElementById('adf-spec').value.trim(),
+      years: parseInt(document.getElementById('adf-years').value) || 0,
+      bio: document.getElementById('adf-bio').value.trim(),
+      courses: []
+    });
+    toast('Faculty added!', 'ok');
+  }
+
+  closeAdminModal();
+  renderAdminFacultyPage();
+  renderAdminDashboard();
+}
+
+function viewAdminFacultyProfile(id) {
+  var f = ADMIN_DB.faculty.find(function(x) { return x.id === id; });
+  if (!f) return;
+  var initials = f.name.split(' ').map(function(w) { return w[0]; }).join('').slice(0, 2).toUpperCase();
+  var desig = ADMIN_DB.designations.filter(function(d) { return d.facultyId === id; });
+  var modal = document.getElementById('admin-modal-overlay');
+  if (!modal) { modal = document.createElement('div'); modal.id = 'admin-modal-overlay'; modal.className = 'overlay'; modal.onclick = function(e) { if (e.target === modal) closeAdminModal(); }; document.body.appendChild(modal); }
+  modal.innerHTML = `
+    <div class="modal" style="width:580px">
+      <div class="modal-hd"><h2>Faculty Profile</h2><button class="btn btn-sm" onclick="closeAdminModal()">✕ Close</button></div>
+      <div class="modal-body">
+        <div style="display:flex;gap:20px;align-items:flex-start;margin-bottom:20px">
+          <div class="admin-profile-avatar">${initials}</div>
+          <div>
+            <h3 style="margin:0 0 4px 0;font-size:16px">${f.name}</h3>
+            <p style="color:var(--text3);margin:0 0 8px 0">${f.title} · ${f.dept}</p>
+            <span class="badge ${f.status === 'Active' ? 'bg-green' : 'bg-amber'}">${f.status}</span>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+          <div class="admin-profile-detail"><span>✉️ Email</span><strong>${f.email}</strong></div>
+          <div class="admin-profile-detail"><span>📱 Phone</span><strong>${f.phone || 'Not provided'}</strong></div>
+          <div class="admin-profile-detail"><span>🎯 Specialization</span><strong>${f.spec}</strong></div>
+          <div class="admin-profile-detail"><span>📅 Years in Service</span><strong>${f.years} year${f.years !== 1 ? 's' : ''}</strong></div>
+        </div>
+        ${f.bio ? `<div class="form-row"><label>Bio</label><div style="font-size:13px;color:var(--text2);line-height:1.6;padding:10px;background:var(--surface2);border-radius:8px">${f.bio}</div></div>` : ''}
+        ${desig.length > 0 ? `
+          <div class="form-row"><label>Designations (${desig.length})</label>
+            ${desig.map(function(d) { return `<div style="padding:8px 10px;background:var(--surface2);border-radius:8px;margin-bottom:6px;border-left:3px solid var(--accent)"><strong>${d.role}</strong> — ${d.dept}<br><span style="font-size:11px;color:var(--text3)">Since ${d.since} · ${d.notes}</span></div>`; }).join('')}
+          </div>` : ''}
+      </div>
+      <div class="modal-ft">
+        <button class="btn" onclick="closeAdminModal()">Close</button>
+        <button class="btn btn-primary" onclick="closeAdminModal();openAdminFacultyModal(${f.id})">✏️ Edit</button>
+      </div>
+    </div>
+  `;
+  modal.classList.add('open');
+}
+
+// ================================================================
+// ADMIN STUDENTS PAGE — FULL CRUD
+// ================================================================
+function renderAdminStudentsPage() {
+  var container = document.getElementById('admin-page-students');
+  if (!container) return;
+
+  container.innerHTML = `
+    <div class="page-hd">
+      <div>
+        <h2>Student Management</h2>
+        <p>View, add, edit and manage all enrolled students</p>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-sm" onclick="adminExportStudents()">📥 Export CSV</button>
+        <button class="btn btn-primary btn-sm" onclick="openAdminStudentModal()">+ Add Student</button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:12px">
+        <div class="form-row" style="margin:0">
+          <label>Search</label>
+          <input type="text" id="admin-stud-search" placeholder="Name, ID, Email..." oninput="adminFilterStudents()"/>
+        </div>
+        <div class="form-row" style="margin:0">
+          <label>Year Level</label>
+          <div class="dropdown-select-wrap">
+            <select id="admin-stud-year" onchange="adminFilterStudents()">
+              <option value="">All Years</option>
+              <option value="1st">1st Year</option>
+              <option value="2nd">2nd Year</option>
+              <option value="3rd">3rd Year</option>
+              <option value="4th">4th Year</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row" style="margin:0">
+          <label>Section</label>
+          <div class="dropdown-select-wrap">
+            <select id="admin-stud-section" onchange="adminFilterStudents()">
+              <option value="">All Sections</option>
+              <option value="A">Section A</option>
+              <option value="B">Section B</option>
+              <option value="C">Section C</option>
+              <option value="D">Section D</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row" style="margin:0">
+          <label>Course</label>
+          <div class="dropdown-select-wrap">
+            <select id="admin-stud-course" onchange="adminFilterStudents()">
+              <option value="">All Courses</option>
+              ${DB.courses.map(function(c, i) { return `<option value="${i}">${c.code}</option>`; }).join('')}
+            </select>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px">
+        <button class="btn btn-ghost btn-sm" onclick="adminResetStudentFilters()">↺ Reset</button>
+        <span id="admin-stud-count-label" style="font-size:12px;color:var(--text3);align-self:center"></span>
+      </div>
+    </div>
+
+    <div id="admin-students-table-wrapper"></div>
+  `;
+
+  adminFilterStudents();
+}
+
+function adminFilterStudents() {
+  var search = ((document.getElementById('admin-stud-search') || {}).value || '').toLowerCase();
+  var year = (document.getElementById('admin-stud-year') || {}).value || '';
+  var section = (document.getElementById('admin-stud-section') || {}).value || '';
+  var courseIdx = (document.getElementById('admin-stud-course') || {}).value;
+
+  var filtered = DB.students.filter(function(s) {
+    var matchSearch = !search || (s.ln + ' ' + s.fn).toLowerCase().includes(search) || s.sid.includes(search) || s.email.toLowerCase().includes(search);
+    var matchYear = !year || s.year === year;
+    var matchSection = !section || s.section === section;
+    var matchCourse = courseIdx === '' || courseIdx === undefined || s.courses.indexOf(parseInt(courseIdx)) > -1;
+    return matchSearch && matchYear && matchSection && matchCourse;
+  });
+
+  var countEl = document.getElementById('admin-stud-count-label');
+  if (countEl) countEl.textContent = 'Showing ' + filtered.length + ' of ' + DB.students.length + ' students';
+
+  var wrapper = document.getElementById('admin-students-table-wrapper');
+  if (!wrapper) return;
+
+  var rows = filtered.map(function(s, i) {
+    var enrolledIn = DB.courses.filter(function(c, idx) { return s.courses.indexOf(idx) > -1; }).length;
+    return `<tr>
+      <td>${i + 1}</td>
+      <td><strong>${s.ln}</strong>, ${s.fn} ${s.mi}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:11px">${s.sid}</td>
+      <td><a href="mailto:${s.email}" style="color:var(--accent)">${s.email}</a></td>
+      <td>${s.year}</td>
+      <td>Sec. ${s.section}</td>
+      <td><span class="badge bg-blue">${enrolledIn} course${enrolledIn !== 1 ? 's' : ''}</span></td>
+      <td><span class="badge bg-green">Active</span></td>
+      <td>
+        <div class="td-actions">
+          <button class="btn btn-sm" onclick="viewAdminStudentProfile(${s.id})" title="View Profile">👁</button>
+          <button class="btn btn-sm" onclick="openAdminStudentModal(${s.id})" title="Edit">✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="confirmAdminDelete('student',${s.id},'${s.ln}, ${s.fn}')" title="Remove">✕</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  wrapper.innerHTML = `
+    <div class="card">
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Student Name</th><th>Student ID</th><th>Email</th><th>Year</th><th>Section</th><th>Enrolled</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody>${rows || '<tr><td colspan="9" class="empty">No students match your filters.</td></tr>'}</tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function adminResetStudentFilters() {
+  ['admin-stud-search','admin-stud-year','admin-stud-section','admin-stud-course'].forEach(function(id) {
+    var el = document.getElementById(id); if (el) el.value = '';
+  });
+  adminFilterStudents();
+}
+
+function openAdminStudentModal(id) {
+  var s = id ? DB.students.find(function(x) { return x.id === id; }) : null;
+  var modal = document.getElementById('admin-modal-overlay');
+  if (!modal) { modal = document.createElement('div'); modal.id = 'admin-modal-overlay'; modal.className = 'overlay'; modal.onclick = function(e) { if (e.target === modal) closeAdminModal(); }; document.body.appendChild(modal); }
+  modal.innerHTML = `
+    <div class="modal" style="width:560px">
+      <div class="modal-hd">
+        <h2>${s ? 'Edit Student: ' + s.ln + ', ' + s.fn : 'Add New Student'}</h2>
+        <button class="btn btn-sm" onclick="closeAdminModal()">✕ Close</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="ads-id" value="${s ? s.id : ''}"/>
+        <div class="form-grid">
+          <div class="form-row"><label>Last Name *</label><input id="ads-ln" placeholder="DELA CRUZ" value="${s ? s.ln : ''}"/></div>
+          <div class="form-row"><label>First Name *</label><input id="ads-fn" placeholder="Juan" value="${s ? s.fn : ''}"/></div>
+        </div>
+        <div class="form-grid">
+          <div class="form-row"><label>Middle Initial</label><input id="ads-mi" placeholder="A." value="${s ? s.mi : ''}"/></div>
+          <div class="form-row"><label>Student ID</label><input id="ads-sid" placeholder="2023-00001" value="${s ? s.sid : ''}"/></div>
+        </div>
+        <div class="form-row"><label>Email</label><input id="ads-email" type="email" placeholder="student@uphsd.edu.ph" value="${s ? s.email : ''}"/></div>
+        <div class="form-grid">
+          <div class="form-row"><label>Year Level</label>
+            <select id="ads-year">
+              <option value="1st" ${(!s || s.year === '1st') ? 'selected' : ''}>1st Year</option>
+              <option value="2nd" ${(s && s.year === '2nd') ? 'selected' : ''}>2nd Year</option>
+              <option value="3rd" ${(s && s.year === '3rd') ? 'selected' : ''}>3rd Year</option>
+              <option value="4th" ${(s && s.year === '4th') ? 'selected' : ''}>4th Year</option>
+            </select>
+          </div>
+          <div class="form-row"><label>Section</label>
+            <select id="ads-section">
+              <option value="A" ${(!s || s.section === 'A') ? 'selected' : ''}>Section A</option>
+              <option value="B" ${(s && s.section === 'B') ? 'selected' : ''}>Section B</option>
+              <option value="C" ${(s && s.section === 'C') ? 'selected' : ''}>Section C</option>
+              <option value="D" ${(s && s.section === 'D') ? 'selected' : ''}>Section D</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-ft">
+        <button class="btn btn-danger" onclick="closeAdminModal()">Cancel</button>
+        <button class="btn btn-success" onclick="saveAdminStudent()">💾 Save Student</button>
+      </div>
+    </div>
+  `;
+  modal.classList.add('open');
+}
+
+function saveAdminStudent() {
+  var id = document.getElementById('ads-id').value;
+  var ln = document.getElementById('ads-ln').value.trim().toUpperCase();
+  var fn = document.getElementById('ads-fn').value.trim();
+  if (!ln || !fn) { toast('Last Name and First Name required.', 'err'); return; }
+
+  if (id) {
+    var s = DB.students.find(function(x) { return x.id === parseInt(id); });
+    if (s) {
+      s.ln = ln; s.fn = fn;
+      s.mi = document.getElementById('ads-mi').value.trim();
+      s.sid = document.getElementById('ads-sid').value.trim();
+      s.email = document.getElementById('ads-email').value.trim();
+      s.year = document.getElementById('ads-year').value;
+      s.section = document.getElementById('ads-section').value;
+      // Sync in courses
+      DB.courses.forEach(function(c) { c.students.forEach(function(cs) { if (cs.id === s.id) { cs.ln = s.ln; cs.fn = s.fn; cs.mi = s.mi; cs.sid = s.sid; cs.email = s.email; } }); });
+      toast('Student updated!', 'ok');
+    }
+  } else {
+    var newId = Math.max.apply(null, DB.students.map(function(x) { return x.id; }).concat([0])) + 1;
+    DB.students.push({
+      id: newId, ln: ln, fn: fn,
+      mi: document.getElementById('ads-mi').value.trim(),
+      sid: document.getElementById('ads-sid').value.trim(),
+      email: document.getElementById('ads-email').value.trim(),
+      year: document.getElementById('ads-year').value,
+      section: document.getElementById('ads-section').value,
+      courses: []
+    });
+    toast('Student added!', 'ok');
+  }
+
+  closeAdminModal();
+  renderAdminStudentsPage();
+  renderAdminDashboard();
+}
+
+function viewAdminStudentProfile(id) {
+  var s = DB.students.find(function(x) { return x.id === id; });
+  if (!s) return;
+  var enrolledCourses = DB.courses.filter(function(c, idx) { return s.courses.indexOf(idx) > -1; });
+  var modal = document.getElementById('admin-modal-overlay');
+  if (!modal) { modal = document.createElement('div'); modal.id = 'admin-modal-overlay'; modal.className = 'overlay'; modal.onclick = function(e) { if (e.target === modal) closeAdminModal(); }; document.body.appendChild(modal); }
+  modal.innerHTML = `
+    <div class="modal" style="width:520px">
+      <div class="modal-hd"><h2>Student Profile</h2><button class="btn btn-sm" onclick="closeAdminModal()">✕ Close</button></div>
+      <div class="modal-body">
+        <div style="display:flex;gap:16px;align-items:center;margin-bottom:20px;padding:16px;background:var(--surface2);border-radius:12px">
+          <div class="admin-profile-avatar">${s.ln[0]}${s.fn[0]}</div>
+          <div>
+            <h3 style="margin:0 0 4px">${s.ln}, ${s.fn} ${s.mi}</h3>
+            <p style="margin:0;color:var(--text3)">${s.year} Year · Section ${s.section}</p>
+            <p style="margin:4px 0 0;font-size:11.5px;font-family:'JetBrains Mono',monospace">${s.sid}</p>
+          </div>
+        </div>
+        <div class="form-grid" style="margin-bottom:16px">
+          <div class="admin-profile-detail"><span>✉️ Email</span><strong>${s.email || 'Not set'}</strong></div>
+          <div class="admin-profile-detail"><span>📚 Enrolled In</span><strong>${enrolledCourses.length} Course${enrolledCourses.length !== 1 ? 's' : ''}</strong></div>
+        </div>
+        ${enrolledCourses.length > 0 ? `
+          <label>Enrolled Courses</label>
+          ${enrolledCourses.map(function(c) {
+            var courseStudent = c.students.find(function(cs) { return cs.id === s.id || (cs.sid === s.sid); });
+            var grade = courseStudent ? compute(courseStudent, c.weeks).grade : 'N/A';
+            return `<div style="display:flex;justify-content:space-between;padding:8px 12px;background:var(--surface2);border-radius:8px;margin-bottom:6px">
+              <div>
+                <strong>${c.code}</strong> — ${c.name}
+                <div style="font-size:11px;color:var(--text3)">${c.section} · ${c.sched}</div>
+              </div>
+              <span class="gpill ${gCls(grade)}">${grade}</span>
+            </div>`;
+          }).join('')}` : '<div class="empty">Not enrolled in any course.</div>'}
+      </div>
+      <div class="modal-ft">
+        <button class="btn" onclick="closeAdminModal()">Close</button>
+        <button class="btn btn-primary" onclick="closeAdminModal();openAdminStudentModal(${s.id})">✏️ Edit</button>
+      </div>
+    </div>
+  `;
+  modal.classList.add('open');
+}
+
+function adminExportStudents() {
+  var csv = 'Last Name,First Name,Student ID,Email,Year,Section,Courses Enrolled\n';
+  DB.students.forEach(function(s) {
+    var courses = DB.courses.filter(function(c, idx) { return s.courses.indexOf(idx) > -1; }).map(function(c) { return c.code; }).join('; ');
+    csv += '"' + s.ln + '","' + s.fn + '","' + s.sid + '","' + s.email + '","' + s.year + '","' + s.section + '","' + courses + '"\n';
+  });
+  var blob = new Blob([csv], { type: 'text/csv' });
+  var url = window.URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = 'admin_students_' + new Date().toISOString().slice(0, 10) + '.csv';
+  a.click();
+  toast('✓ Exported ' + DB.students.length + ' students to CSV', 'ok');
+}
+
+// ================================================================
+// ADMIN ENROLLMENT PAGE
+// ================================================================
+function renderAdminEnrollmentPage() {
+  var container = document.getElementById('admin-page-enrollment');
+  if (!container) return;
+
+  var totalEnrollments = DB.courses.reduce(function(sum, c) { return sum + c.students.length; }, 0);
+  var capacity = 30;
+
+  container.innerHTML = `
+    <div class="page-hd">
+      <div>
+        <h2>Enrollment Management</h2>
+        <p>Manage course enrollment capacity and enrollment periods</p>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary btn-sm" onclick="openAdminEnrollmentPeriodModal()">+ New Period</button>
+      </div>
+    </div>
+
+    <div class="admin-stat-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
+      <div class="admin-stat-card admin-stat-maroon">
+        <div class="admin-stat-icon">📋</div>
+        <div class="admin-stat-body">
+          <div class="admin-stat-num">${totalEnrollments}</div>
+          <div class="admin-stat-lbl">Total Enrollments</div>
+          <div class="admin-stat-sub">Across all courses</div>
+        </div>
+      </div>
+      <div class="admin-stat-card admin-stat-gold">
+        <div class="admin-stat-icon">📚</div>
+        <div class="admin-stat-body">
+          <div class="admin-stat-num">${DB.courses.length}</div>
+          <div class="admin-stat-lbl">Active Courses</div>
+          <div class="admin-stat-sub">This semester</div>
+        </div>
+      </div>
+      <div class="admin-stat-card admin-stat-green">
+        <div class="admin-stat-icon">✅</div>
+        <div class="admin-stat-body">
+          <div class="admin-stat-num">${Math.round(totalEnrollments / (DB.courses.length * capacity) * 100)}%</div>
+          <div class="admin-stat-lbl">Avg Capacity</div>
+          <div class="admin-stat-sub">System-wide fill rate</div>
+        </div>
+      </div>
+      <div class="admin-stat-card admin-stat-blue">
+        <div class="admin-stat-icon">🗓️</div>
+        <div class="admin-stat-body">
+          <div class="admin-stat-num">${ADMIN_DB.enrollmentPeriods.filter(function(p) { return p.status === 'Open'; }).length}</div>
+          <div class="admin-stat-lbl">Open Periods</div>
+          <div class="admin-stat-sub">Currently active</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+      <div class="card">
+        <div class="card-hd">
+          <div class="card-hd-l"><h3>Enrollment Periods</h3></div>
+          <div class="card-hd-r"><button class="btn btn-sm btn-primary" onclick="openAdminEnrollmentPeriodModal()">+ Add</button></div>
+        </div>
+        <div id="admin-enrollment-periods"></div>
+      </div>
+      <div class="card">
+        <div class="card-hd">
+          <div class="card-hd-l"><h3>Enrollment by Section</h3><p>Students per section across courses</p></div>
+        </div>
+        ${renderEnrollmentBySection()}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-hd">
+        <div class="card-hd-l"><h3>Course Enrollment Status</h3><p>Capacity and enrollment fill rate per course</p></div>
+      </div>
+      <div class="admin-enrollment-grid" id="admin-enrollment-courses"></div>
+    </div>
+  `;
+
+  // Render enrollment periods
+  var periodsEl = document.getElementById('admin-enrollment-periods');
+  if (periodsEl) {
+    periodsEl.innerHTML = ADMIN_DB.enrollmentPeriods.map(function(p) {
+      return `<div style="padding:12px;background:var(--surface2);border-radius:10px;margin-bottom:10px;border-left:4px solid ${p.status === 'Open' ? 'var(--green)' : 'var(--text3)'}">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <strong>${p.sem}</strong>
+          <span class="badge ${p.status === 'Open' ? 'bg-green' : 'bg-gray'}">${p.status}</span>
+        </div>
+        <p style="font-size:11px;color:var(--text3);margin:0">${p.start} to ${p.end}</p>
+        <div style="margin-top:8px;display:flex;gap:6px">
+          <button class="btn btn-sm" onclick="toggleEnrollmentPeriod(${p.id})">${p.status === 'Open' ? '🔒 Close' : '🔓 Open'}</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteEnrollmentPeriod(${p.id})">🗑</button>
+        </div>
+      </div>`;
+    }).join('') || '<div class="empty">No enrollment periods.</div>';
+  }
+
+  // Render courses
+  var coursesEl = document.getElementById('admin-enrollment-courses');
+  if (coursesEl) {
+    coursesEl.innerHTML = DB.courses.map(function(c) {
+      var enrolled = c.students.length;
+      var pct = Math.round(enrolled / capacity * 100);
+      var color = enrolled >= 25 ? 'var(--red)' : enrolled >= 15 ? 'var(--amber)' : 'var(--green)';
+      return `<div class="admin-enroll-card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+          <div>
+            <strong>${c.code}</strong>
+            <div style="font-size:11px;color:var(--text3)">${c.name.substring(0, 30)}</div>
+          </div>
+          <span style="font-weight:800;color:${color};font-size:16px">${enrolled}/${capacity}</span>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:8px">${c.section} · ${c.sched}</div>
+        <div class="perf-bar-track"><div class="perf-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-top:4px">
+          <span>${pct}% full</span>
+          <span>${capacity - enrolled} slots remaining</span>
+        </div>
+      </div>`;
+    }).join('') || '<div class="empty" style="padding:16px">No courses found.</div>';
+  }
+}
+
+function renderEnrollmentBySection() {
+  var sections = { A: 0, B: 0, C: 0, D: 0 };
+  DB.students.forEach(function(s) { if (sections[s.section] !== undefined) sections[s.section]++; });
+  var max = Math.max.apply(null, Object.values(sections).concat([1]));
+  return Object.keys(sections).map(function(sec) {
+    var count = sections[sec];
+    var pct = Math.round(count / max * 100);
+    return `<div class="perf-bar">
+      <div class="perf-bar-label"><span>Section ${sec}</span><span style="font-weight:700">${count} students</span></div>
+      <div class="perf-bar-track"><div class="perf-bar-fill" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function toggleEnrollmentPeriod(id) {
+  var p = ADMIN_DB.enrollmentPeriods.find(function(x) { return x.id === id; });
+  if (p) { p.status = p.status === 'Open' ? 'Closed' : 'Open'; renderAdminEnrollmentPage(); toast('Enrollment period ' + p.status.toLowerCase() + '.', 'ok'); }
+}
+
+function deleteEnrollmentPeriod(id) {
+  ADMIN_DB.enrollmentPeriods = ADMIN_DB.enrollmentPeriods.filter(function(x) { return x.id !== id; });
+  renderAdminEnrollmentPage(); toast('Period deleted.', 'ok');
+}
+
+function openAdminEnrollmentPeriodModal() {
+  var modal = document.getElementById('admin-modal-overlay');
+  if (!modal) { modal = document.createElement('div'); modal.id = 'admin-modal-overlay'; modal.className = 'overlay'; modal.onclick = function(e) { if (e.target === modal) closeAdminModal(); }; document.body.appendChild(modal); }
+  modal.innerHTML = `
+    <div class="modal" style="width:460px">
+      <div class="modal-hd"><h2>Add Enrollment Period</h2><button class="btn btn-sm" onclick="closeAdminModal()">✕ Close</button></div>
+      <div class="modal-body">
+        <div class="form-row"><label>Semester *</label><input id="aep-sem" placeholder="1st Semester 2026–2027"/></div>
+        <div class="form-grid">
+          <div class="form-row"><label>Start Date</label><input type="date" id="aep-start"/></div>
+          <div class="form-row"><label>End Date</label><input type="date" id="aep-end"/></div>
+        </div>
+        <div class="form-row"><label>Status</label>
+          <select id="aep-status"><option value="Open">Open</option><option value="Closed">Closed</option></select>
+        </div>
+      </div>
+      <div class="modal-ft">
+        <button class="btn btn-danger" onclick="closeAdminModal()">Cancel</button>
+        <button class="btn btn-success" onclick="saveEnrollmentPeriod()">💾 Save</button>
+      </div>
+    </div>
+  `;
+  modal.classList.add('open');
+}
+
+function saveEnrollmentPeriod() {
+  var sem = document.getElementById('aep-sem').value.trim();
+  if (!sem) { toast('Semester name required.', 'err'); return; }
+  var newId = Math.max.apply(null, ADMIN_DB.enrollmentPeriods.map(function(x) { return x.id; }).concat([0])) + 1;
+  ADMIN_DB.enrollmentPeriods.push({ id: newId, sem: sem, start: document.getElementById('aep-start').value, end: document.getElementById('aep-end').value, status: document.getElementById('aep-status').value });
+  closeAdminModal();
+  renderAdminEnrollmentPage();
+  toast('Enrollment period added!', 'ok');
+}
+
+// ================================================================
+// ADMIN DESIGNATION PAGE
+// ================================================================
+function renderAdminDesignationPage() {
+  var container = document.getElementById('admin-page-designation');
+  if (!container) return;
+
+  container.innerHTML = `
+    <div class="page-hd">
+      <div>
+        <h2>Faculty Designation</h2>
+        <p>Manage faculty roles, duties, and special assignments</p>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="openAdminDesignationModal()">+ Add Designation</button>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:12px">
+        <div class="form-row" style="margin:0"><label>Search</label><input type="text" id="admin-desig-search" placeholder="Search designations..." oninput="adminFilterDesignations()"/></div>
+        <div class="form-row" style="margin:0"><label>Department</label>
+          <div class="dropdown-select-wrap">
+            <select id="admin-desig-dept" onchange="adminFilterDesignations()">
+              <option value="">All</option>
+              <option>College of Computer Studies</option>
+              <option>IT Department</option>
+              <option>General Education</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="admin-designations-container"></div>
+  `;
+
+  adminFilterDesignations();
+}
+
+function adminFilterDesignations() {
+  var search = ((document.getElementById('admin-desig-search') || {}).value || '').toLowerCase();
+  var dept = (document.getElementById('admin-desig-dept') || {}).value || '';
+
+  var filtered = ADMIN_DB.designations.filter(function(d) {
+    var f = ADMIN_DB.faculty.find(function(x) { return x.id === d.facultyId; });
+    var fname = f ? f.name.toLowerCase() : '';
+    var matchSearch = !search || d.role.toLowerCase().includes(search) || fname.includes(search) || d.dept.toLowerCase().includes(search);
+    var matchDept = !dept || d.dept === dept;
+    return matchSearch && matchDept;
+  });
+
+  var container = document.getElementById('admin-designations-container');
+  if (!container) return;
+
+  var rows = filtered.map(function(d, i) {
+    var f = ADMIN_DB.faculty.find(function(x) { return x.id === d.facultyId; });
+    return `<tr>
+      <td>${i + 1}</td>
+      <td><strong>${f ? f.name : 'Unknown'}</strong></td>
+      <td>${d.role}</td>
+      <td>${d.dept}</td>
+      <td style="font-size:11px;color:var(--text3)">${d.since}</td>
+      <td style="font-size:11.5px;color:var(--text2)">${d.notes}</td>
+      <td>
+        <div class="td-actions">
+          <button class="btn btn-sm" onclick="openAdminDesignationModal(${d.id})" title="Edit">✏️</button>
+          <button class="btn btn-sm btn-danger" onclick="confirmAdminDelete('designation',${d.id},'${d.role}')" title="Delete">🗑</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  container.innerHTML = `
+    <div class="card">
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Faculty</th><th>Role / Designation</th><th>Department</th><th>Since</th><th>Notes</th><th>Actions</th></tr></thead>
+          <tbody>${rows || '<tr><td colspan="7" class="empty">No designations found.</td></tr>'}</tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function openAdminDesignationModal(id) {
+  var d = id ? ADMIN_DB.designations.find(function(x) { return x.id === id; }) : null;
+  var modal = document.getElementById('admin-modal-overlay');
+  if (!modal) { modal = document.createElement('div'); modal.id = 'admin-modal-overlay'; modal.className = 'overlay'; modal.onclick = function(e) { if (e.target === modal) closeAdminModal(); }; document.body.appendChild(modal); }
+  modal.innerHTML = `
+    <div class="modal" style="width:500px">
+      <div class="modal-hd"><h2>${d ? 'Edit Designation' : 'Add Designation'}</h2><button class="btn btn-sm" onclick="closeAdminModal()">✕ Close</button></div>
+      <div class="modal-body">
+        <input type="hidden" id="add-id" value="${d ? d.id : ''}"/>
+        <div class="form-row"><label>Faculty Member *</label>
+          <select id="add-faculty">
+            ${ADMIN_DB.faculty.map(function(f) { return `<option value="${f.id}" ${d && d.facultyId === f.id ? 'selected' : ''}>${f.name}</option>`; }).join('')}
+          </select>
+        </div>
+        <div class="form-row"><label>Role / Designation *</label><input id="add-role" placeholder="e.g. Department Chair" value="${d ? d.role : ''}"/></div>
+        <div class="form-grid">
+          <div class="form-row"><label>Department</label><input id="add-dept" placeholder="e.g. CCS" value="${d ? d.dept : 'College of Computer Studies'}"/></div>
+          <div class="form-row"><label>Since (Year-Month)</label><input id="add-since" placeholder="2024-01" value="${d ? d.since : ''}"/></div>
+        </div>
+        <div class="form-row"><label>Notes</label><textarea id="add-notes">${d ? d.notes : ''}</textarea></div>
+      </div>
+      <div class="modal-ft">
+        <button class="btn btn-danger" onclick="closeAdminModal()">Cancel</button>
+        <button class="btn btn-success" onclick="saveAdminDesignation()">💾 Save</button>
+      </div>
+    </div>
+  `;
+  modal.classList.add('open');
+}
+
+function saveAdminDesignation() {
+  var id = document.getElementById('add-id').value;
+  var role = document.getElementById('add-role').value.trim();
+  var facultyId = parseInt(document.getElementById('add-faculty').value);
+  if (!role || !facultyId) { toast('Faculty and role required.', 'err'); return; }
+
+  if (id) {
+    var d = ADMIN_DB.designations.find(function(x) { return x.id === parseInt(id); });
+    if (d) { d.facultyId = facultyId; d.role = role; d.dept = document.getElementById('add-dept').value.trim(); d.since = document.getElementById('add-since').value.trim(); d.notes = document.getElementById('add-notes').value.trim(); toast('Designation updated!', 'ok'); }
+  } else {
+    var newId = Math.max.apply(null, ADMIN_DB.designations.map(function(x) { return x.id; }).concat([0])) + 1;
+    ADMIN_DB.designations.push({ id: newId, facultyId: facultyId, role: role, dept: document.getElementById('add-dept').value.trim(), since: document.getElementById('add-since').value.trim(), notes: document.getElementById('add-notes').value.trim() });
+    toast('Designation added!', 'ok');
+  }
+  closeAdminModal(); renderAdminDesignationPage();
+}
+
+// ================================================================
+// ADMIN CURRICULUM PAGE
+// ================================================================
+function renderAdminCurriculumPage() {
+  var container = document.getElementById('admin-page-curriculum');
+  if (!container) return;
+
+  container.innerHTML = `
+    <div class="page-hd">
+      <div>
+        <h2>Curriculum Management</h2>
+        <p>Define academic programs, units, and course offerings</p>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="openAdminProgramModal()">+ Add Program</button>
+    </div>
+
+    <div class="admin-curriculum-grid" id="admin-curriculum-programs"></div>
+
+    <div class="card" style="margin-top:16px">
+      <div class="card-hd">
+        <div class="card-hd-l"><h3>Course Offerings This Semester</h3><p>All courses currently assigned in the system</p></div>
+        <div class="card-hd-r"><button class="btn btn-primary btn-sm" onclick="openAdminAddCourseFromAdmin()">+ Add Course</button></div>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Code</th><th>Course Name</th><th>Units</th><th>Section</th><th>Schedule</th><th>Room</th><th>Enrolled</th><th>Actions</th></tr></thead>
+          <tbody id="admin-curriculum-courses-body"></tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  // Render programs
+  var programsEl = document.getElementById('admin-curriculum-programs');
+  if (programsEl) {
+    programsEl.innerHTML = ADMIN_DB.programs.map(function(p) {
+      return `<div class="admin-program-card">
+        <div class="admin-pc-header">
+          <div class="admin-pc-code">${p.code}</div>
+          <button class="btn btn-sm" onclick="openAdminProgramModal(${p.id})">✏️ Edit</button>
+        </div>
+        <h4>${p.name}</h4>
+        <div class="admin-pc-details">
+          <div class="admin-pc-detail"><span>Units</span><strong>${p.units}</strong></div>
+          <div class="admin-pc-detail"><span>Semesters</span><strong>${p.semesters}</strong></div>
+          <div class="admin-pc-detail"><span>Min Grade</span><strong>${p.minGrade}</strong></div>
+          <div class="admin-pc-detail"><span>Dean/Head</span><strong style="font-size:10.5px">${p.dean.split(' ').slice(-2).join(' ')}</strong></div>
+        </div>
+        <div style="margin-top:10px;display:flex;gap:6px">
+          <button class="btn btn-sm btn-primary" onclick="viewAdminProgram(${p.id})">📖 View Subjects</button>
+          <button class="btn btn-sm btn-danger" onclick="confirmAdminDelete('program',${p.id},'${p.code}')">🗑</button>
+        </div>
+      </div>`;
+    }).join('') || '<div class="empty">No programs found.</div>';
+  }
+
+  // Render courses
+  var coursesBody = document.getElementById('admin-curriculum-courses-body');
+  if (coursesBody) {
+    coursesBody.innerHTML = DB.courses.map(function(c, i) {
+      return `<tr>
+        <td><strong>${c.code}</strong></td>
+        <td>${c.name}</td>
+        <td>${c.units}</td>
+        <td>${c.section}</td>
+        <td>${c.sched}</td>
+        <td>${c.room}</td>
+        <td><span class="badge bg-blue">${c.students.length}</span></td>
+        <td>
+          <div class="td-actions">
+            <button class="btn btn-sm" onclick="editCourse(${i},event)" title="Edit">✏️</button>
+            <button class="btn btn-sm btn-danger" onclick="askDeleteCourse(${i},event)" title="Delete">🗑</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="8" class="empty">No courses found.</td></tr>';
+  }
+}
+
+function openAdminProgramModal(id) {
+  var p = id ? ADMIN_DB.programs.find(function(x) { return x.id === id; }) : null;
+  var modal = document.getElementById('admin-modal-overlay');
+  if (!modal) { modal = document.createElement('div'); modal.id = 'admin-modal-overlay'; modal.className = 'overlay'; modal.onclick = function(e) { if (e.target === modal) closeAdminModal(); }; document.body.appendChild(modal); }
+  modal.innerHTML = `
+    <div class="modal" style="width:500px">
+      <div class="modal-hd"><h2>${p ? 'Edit Program: ' + p.code : 'Add Program'}</h2><button class="btn btn-sm" onclick="closeAdminModal()">✕ Close</button></div>
+      <div class="modal-body">
+        <input type="hidden" id="acp-id" value="${p ? p.id : ''}"/>
+        <div class="form-grid">
+          <div class="form-row"><label>Program Code *</label><input id="acp-code" placeholder="BSCS" value="${p ? p.code : ''}"/></div>
+          <div class="form-row"><label>Total Units</label><input type="number" id="acp-units" value="${p ? p.units : 120}"/></div>
+        </div>
+        <div class="form-row"><label>Program Name *</label><input id="acp-name" placeholder="Bachelor of Science in..." value="${p ? p.name : ''}"/></div>
+        <div class="form-grid">
+          <div class="form-row"><label>Semesters</label><input type="number" id="acp-sem" value="${p ? p.semesters : 8}"/></div>
+          <div class="form-row"><label>Minimum Grade</label><input type="number" id="acp-min" value="${p ? p.minGrade : 75}"/></div>
+        </div>
+        <div class="form-row"><label>Dean / Program Head</label><input id="acp-dean" placeholder="Dr. Juan Dela Cruz" value="${p ? p.dean : ''}"/></div>
+      </div>
+      <div class="modal-ft">
+        <button class="btn btn-danger" onclick="closeAdminModal()">Cancel</button>
+        <button class="btn btn-success" onclick="saveAdminProgram()">💾 Save Program</button>
+      </div>
+    </div>
+  `;
+  modal.classList.add('open');
+}
+
+function saveAdminProgram() {
+  var id = document.getElementById('acp-id').value;
+  var code = document.getElementById('acp-code').value.trim().toUpperCase();
+  var name = document.getElementById('acp-name').value.trim();
+  if (!code || !name) { toast('Code and name required.', 'err'); return; }
+
+  if (id) {
+    var p = ADMIN_DB.programs.find(function(x) { return x.id === parseInt(id); });
+    if (p) { p.code = code; p.name = name; p.units = parseInt(document.getElementById('acp-units').value) || 120; p.semesters = parseInt(document.getElementById('acp-sem').value) || 8; p.minGrade = parseInt(document.getElementById('acp-min').value) || 75; p.dean = document.getElementById('acp-dean').value.trim(); toast('Program updated!', 'ok'); }
+  } else {
+    var newId = Math.max.apply(null, ADMIN_DB.programs.map(function(x) { return x.id; }).concat([0])) + 1;
+    ADMIN_DB.programs.push({ id: newId, code: code, name: name, units: parseInt(document.getElementById('acp-units').value) || 120, semesters: parseInt(document.getElementById('acp-sem').value) || 8, minGrade: parseInt(document.getElementById('acp-min').value) || 75, dean: document.getElementById('acp-dean').value.trim(), subjects: [] });
+    toast('Program added!', 'ok');
+  }
+  closeAdminModal(); renderAdminCurriculumPage();
+}
+
+function viewAdminProgram(id) {
+  var p = ADMIN_DB.programs.find(function(x) { return x.id === id; });
+  if (!p) return;
+  var modal = document.getElementById('admin-modal-overlay');
+  if (!modal) { modal = document.createElement('div'); modal.id = 'admin-modal-overlay'; modal.className = 'overlay'; modal.onclick = function(e) { if (e.target === modal) closeAdminModal(); }; document.body.appendChild(modal); }
+  modal.innerHTML = `
+    <div class="modal">
+      <div class="modal-hd"><h2>${p.code} — Subject List</h2><button class="btn btn-sm" onclick="closeAdminModal()">✕ Close</button></div>
+      <div class="modal-body">
+        <p style="color:var(--text3);margin-bottom:12px">${p.name} · ${p.units} units · ${p.semesters} semesters · Min grade: ${p.minGrade}</p>
+        ${p.subjects.length > 0 ?
+          p.subjects.map(function(sub, i) { return `<div style="padding:8px 12px;background:var(--surface2);border-radius:8px;margin-bottom:6px"><strong>${i+1}. ${sub}</strong></div>`; }).join('') :
+          '<div class="empty">No subjects listed yet.</div>'
+        }
+      </div>
+      <div class="modal-ft"><button class="btn" onclick="closeAdminModal()">Close</button></div>
+    </div>
+  `;
+  modal.classList.add('open');
+}
+
+function openAdminAddCourseFromAdmin() {
+  openAddCourse();
+}
+
+// ================================================================
+// ADMIN MODAL HELPERS
+// ================================================================
+function closeAdminModal() {
+  var modal = document.getElementById('admin-modal-overlay');
+  if (modal) modal.classList.remove('open');
+}
+
+function confirmAdminDelete(type, id, name) {
+  var modal = document.getElementById('admin-modal-overlay');
+  if (!modal) { modal = document.createElement('div'); modal.id = 'admin-modal-overlay'; modal.className = 'overlay'; modal.onclick = function(e) { if (e.target === modal) closeAdminModal(); }; document.body.appendChild(modal); }
+  modal.innerHTML = `
+    <div class="modal" style="width:380px">
+      <div class="modal-hd"><h2>Confirm Delete</h2></div>
+      <div class="modal-body"><p style="font-size:13.5px;color:var(--text2);line-height:1.6">Are you sure you want to delete <strong>${name}</strong>? This action cannot be undone.</p></div>
+      <div class="modal-ft">
+        <button class="btn" onclick="closeAdminModal()">Cancel</button>
+        <button class="btn btn-danger" onclick="doAdminDelete('${type}',${id})">🗑 Delete</button>
+      </div>
+    </div>
+  `;
+  modal.classList.add('open');
+}
+
+function doAdminDelete(type, id) {
+  if (type === 'faculty') {
+    ADMIN_DB.faculty = ADMIN_DB.faculty.filter(function(x) { return x.id !== id; });
+    ADMIN_DB.designations = ADMIN_DB.designations.filter(function(x) { return x.facultyId !== id; });
+    closeAdminModal(); renderAdminFacultyPage(); renderAdminDashboard(); toast('Faculty deleted.', 'ok');
+  } else if (type === 'student') {
+    DB.courses.forEach(function(c) { c.students = c.students.filter(function(s) { return s.id !== id; }); });
+    DB.students = DB.students.filter(function(x) { return x.id !== id; });
+    closeAdminModal(); renderAdminStudentsPage(); renderAdminDashboard(); toast('Student deleted.', 'ok');
+  } else if (type === 'designation') {
+    ADMIN_DB.designations = ADMIN_DB.designations.filter(function(x) { return x.id !== id; });
+    closeAdminModal(); renderAdminDesignationPage(); toast('Designation deleted.', 'ok');
+  } else if (type === 'program') {
+    ADMIN_DB.programs = ADMIN_DB.programs.filter(function(x) { return x.id !== id; });
+    closeAdminModal(); renderAdminCurriculumPage(); toast('Program deleted.', 'ok');
+  }
+}
+
+function openAdminModal(type) {
+  if (type === 'announcement') {
+    var modal = document.getElementById('admin-modal-overlay');
+    if (!modal) { modal = document.createElement('div'); modal.id = 'admin-modal-overlay'; modal.className = 'overlay'; modal.onclick = function(e) { if (e.target === modal) closeAdminModal(); }; document.body.appendChild(modal); }
+    modal.innerHTML = `
+      <div class="modal" style="width:480px">
+        <div class="modal-hd"><h2>Post Announcement</h2><button class="btn btn-sm" onclick="closeAdminModal()">✕ Close</button></div>
+        <div class="modal-body">
+          <div class="form-row"><label>Title *</label><input id="aan-title" placeholder="Announcement title..."/></div>
+          <div class="form-row"><label>Message *</label><textarea id="aan-body" style="min-height:100px" placeholder="Write your announcement here..."></textarea></div>
+          <div class="form-grid">
+            <div class="form-row"><label>Priority</label><select id="aan-priority"><option value="medium">Medium</option><option value="high">High</option><option value="low">Low</option></select></div>
+            <div class="form-row"><label>Date</label><input type="date" id="aan-date" value="${new Date().toISOString().slice(0,10)}"/></div>
+          </div>
+        </div>
+        <div class="modal-ft">
+          <button class="btn btn-danger" onclick="closeAdminModal()">Cancel</button>
+          <button class="btn btn-success" onclick="postAnnouncement()">📢 Post</button>
+        </div>
+      </div>
+    `;
+    modal.classList.add('open');
+  }
+}
+
+function postAnnouncement() {
+  var title = document.getElementById('aan-title').value.trim();
+  var body = document.getElementById('aan-body').value.trim();
+  if (!title || !body) { toast('Title and message required.', 'err'); return; }
+  var newId = Math.max.apply(null, ADMIN_DB.announcements.map(function(x) { return x.id; }).concat([0])) + 1;
+  ADMIN_DB.announcements.unshift({ id: newId, title: title, body: body, priority: document.getElementById('aan-priority').value, date: document.getElementById('aan-date').value });
+  closeAdminModal(); renderAdminDashboard(); toast('Announcement posted!', 'ok');
+}
+
+function exportAdminReport() {
+  var csv = 'UPHSD CCS Admin Report\n';
+  csv += 'Generated: ' + new Date().toLocaleString() + '\n\n';
+  csv += 'Faculty Summary\n';
+  csv += 'Name,Email,Department,Title,Status,Years\n';
+  ADMIN_DB.faculty.forEach(function(f) { csv += '"' + f.name + '","' + f.email + '","' + f.dept + '","' + f.title + '","' + f.status + '",' + f.years + '\n'; });
+  csv += '\nStudent Summary\n';
+  csv += 'Last Name,First Name,ID,Email,Year,Section\n';
+  DB.students.forEach(function(s) { csv += '"' + s.ln + '","' + s.fn + '","' + s.sid + '","' + s.email + '","' + s.year + '","' + s.section + '"\n'; });
+  csv += '\nCourse Summary\n';
+  csv += 'Code,Name,Section,Units,Room,Schedule,Enrolled\n';
+  DB.courses.forEach(function(c) { csv += '"' + c.code + '","' + c.name + '","' + c.section + '",' + c.units + ',"' + c.room + '","' + c.sched + '",' + c.students.length + '\n'; });
+  var blob = new Blob([csv], { type: 'text/csv' });
+  var url = window.URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = 'admin_report_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  toast('✓ Admin report exported!', 'ok');
+}
+
+// ================================================================
+// ADMIN CSS INJECTION — Design matching faculty dashboard
+// ================================================================
+(function injectAdminStyles() {
+  var style = document.createElement('style');
+  style.textContent = `
+    /* Admin Dashboard Welcome */
+    .admin-dash-welcome {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding: 20px 24px;
+      background: linear-gradient(135deg, #8b1a2a 0%, #b52235 100%);
+      border-radius: var(--radius);
+      color: white;
+    }
+    .admin-welcome-title { font-size: 18px; font-weight: 800; margin: 0 0 4px; color: white; }
+    .admin-welcome-sub { font-size: 12.5px; color: rgba(255,255,255,0.8); margin: 0; }
+    .admin-dash-welcome .btn { background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3); }
+    .admin-dash-welcome .btn:hover { background: rgba(255,255,255,0.25); }
+    .admin-dash-welcome .btn-primary { background: white; color: #8b1a2a; border-color: white; }
+
+    /* Admin Stat Grid */
+    .admin-stat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .admin-stat-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px;
+      border-radius: var(--radius);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+    }
+    .admin-stat-icon { font-size: 28px; flex-shrink: 0; }
+    .admin-stat-num { font-size: 24px; font-weight: 900; line-height: 1.1; }
+    .admin-stat-lbl { font-size: 12px; font-weight: 700; color: var(--text2); margin-top: 2px; }
+    .admin-stat-sub { font-size: 10.5px; color: var(--text3); margin-top: 2px; }
+    .admin-stat-maroon { border-left: 4px solid #8b1a2a; }
+    .admin-stat-maroon .admin-stat-num { color: #8b1a2a; }
+    .admin-stat-gold { border-left: 4px solid var(--accent); }
+    .admin-stat-gold .admin-stat-num { color: var(--accent); }
+    .admin-stat-green { border-left: 4px solid var(--green); }
+    .admin-stat-green .admin-stat-num { color: var(--green); }
+    .admin-stat-blue { border-left: 4px solid var(--blue); }
+    .admin-stat-blue .admin-stat-num { color: var(--blue); }
+
+    /* Admin Dashboard Grid */
+    .admin-dash-grid {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 16px;
+    }
+
+    /* Admin Quick Actions */
+    .admin-quick-actions {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .admin-qa-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 14px 8px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all .15s;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .admin-qa-btn:hover { background: var(--surface3); border-color: var(--accent); color: var(--accent); transform: translateY(-1px); }
+    .admin-qa-icon { font-size: 22px; }
+
+    /* Admin Announcement */
+    .admin-announcement {
+      padding: 12px 14px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      background: var(--surface2);
+      border-left: 4px solid var(--accent);
+    }
+    .admin-announcement.priority-high { border-left-color: var(--red); }
+    .admin-announcement h4 { font-size: 12.5px; font-weight: 700; margin: 0 0 4px; }
+    .admin-announcement p { font-size: 11.5px; color: var(--text2); margin: 0 0 8px; line-height: 1.5; }
+    .admin-ann-footer { font-size: 10.5px; color: var(--text3); }
+
+    /* Admin Faculty Grid */
+    .admin-faculty-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 14px;
+    }
+    .admin-faculty-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: box-shadow .15s, transform .15s;
+    }
+    .admin-faculty-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,.12); transform: translateY(-2px); }
+    .admin-fc-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      background: linear-gradient(135deg, rgba(139,26,42,.06), rgba(200,147,42,.04));
+      border-bottom: 1px solid var(--border);
+    }
+    .admin-fc-avatar {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #8b1a2a, #b52235);
+      color: white;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; font-weight: 800;
+      flex-shrink: 0;
+    }
+    .admin-fc-meta { flex: 1; min-width: 0; }
+    .admin-fc-meta h4 { font-size: 13px; font-weight: 800; margin: 0 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .admin-fc-meta p { font-size: 11px; color: var(--text3); margin: 0; }
+    .admin-fc-body { padding: 14px 16px; }
+    .admin-fc-info { display: flex; gap: 8px; align-items: flex-start; font-size: 12px; color: var(--text2); margin-bottom: 6px; }
+    .admin-fc-info span:first-child { flex-shrink: 0; }
+    .admin-fc-footer {
+      display: flex;
+      gap: 6px;
+      padding: 12px 16px;
+      background: var(--surface2);
+      border-top: 1px solid var(--border);
+    }
+    .admin-fc-footer .btn { flex: 1; justify-content: center; }
+
+    /* Admin Profile Details */
+    .admin-profile-avatar {
+      width: 60px; height: 60px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #8b1a2a, #b52235);
+      color: white;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; font-weight: 800;
+      flex-shrink: 0;
+    }
+    .admin-profile-detail {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      padding: 10px;
+      background: var(--surface2);
+      border-radius: 8px;
+    }
+    .admin-profile-detail span { font-size: 10.5px; color: var(--text3); }
+    .admin-profile-detail strong { font-size: 12.5px; }
+
+    /* Enrollment Cards */
+    .admin-enrollment-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 14px;
+      padding: 4px;
+    }
+    .admin-enroll-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+    }
+
+    /* Designation rows */
+    .admin-designation-row { padding: 10px; border-bottom: 1px solid var(--border); }
+
+    /* Curriculum */
+    .admin-curriculum-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 14px;
+      margin-bottom: 8px;
+    }
+    .admin-program-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      transition: box-shadow .15s;
+    }
+    .admin-program-card:hover { box-shadow: 0 4px 18px rgba(0,0,0,.1); }
+    .admin-pc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .admin-pc-code {
+      font-size: 22px; font-weight: 900;
+      background: linear-gradient(135deg, #8b1a2a, #b52235);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .admin-program-card h4 { font-size: 13px; margin: 0 0 12px; color: var(--text2); }
+    .admin-pc-details { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .admin-pc-detail {
+      display: flex; flex-direction: column; gap: 2px;
+      padding: 8px; background: var(--surface2); border-radius: 8px;
+    }
+    .admin-pc-detail span { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: .4px; }
+    .admin-pc-detail strong { font-size: 13px; }
+
+    /* Page header for admin */
+    .page-hd { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+    .page-hd h2 { font-size: 18px; font-weight: 800; margin: 0 0 4px; }
+    .page-hd p { font-size: 12px; color: var(--text3); margin: 0; }
+
+    /* Admin topbar */
+    #adminTopbarDate { font-weight: 700; font-size: 12.5px; }
+    #adminTopbarTime { font-size: 11.5px; color: var(--text3); }
+
+    /* Sidebar admin tag */
+    .sb-admin-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      color: #8b1a2a;
+      background: rgba(139,26,42,.1);
+      padding: 3px 8px;
+      border-radius: 20px;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+
+    @media (max-width: 900px) {
+      .admin-stat-grid { grid-template-columns: repeat(2, 1fr); }
+      .admin-dash-grid { grid-template-columns: 1fr; }
+      .admin-faculty-grid { grid-template-columns: 1fr; }
+      .admin-curriculum-grid { grid-template-columns: 1fr; }
+    }
+  `;
+  document.head.appendChild(style);
+})();
+
+// ================================================================
+// AUTO-INIT: Override showAdminPanel to call initAdmin
+// ================================================================
+var _origShowAdminPanel = window.showAdminPanel;
+window.showAdminPanel = function() {
+  if (_origShowAdminPanel) _origShowAdminPanel();
+  else {
+    document.getElementById('adminShell').classList.remove('app-hidden');
+    document.getElementById('appShell').classList.add('app-hidden');
+    document.getElementById('loginScreen').classList.add('hidden');
+  }
+  initAdmin();
+  switchAdminPage('dashboard');
+};
