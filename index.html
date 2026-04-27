@@ -21,8 +21,26 @@
       <p>S.Y. 2025–2026 &middot; Academic Management System</p>
     </div>
 
+    <!-- LOGIN OPTIONS: FACULTY vs ADMIN -->
+    <div class="auth-panel active" id="panel-login-options">
+      <div class="option-title">Choose Your Role</div>
+      <div class="option-buttons">
+        <button class="option-btn faculty-option" onclick="selectRole('faculty'); showPanel('panel-login')">
+          <span class="option-icon">👨‍🏫</span>
+          <span class="option-text">Faculty Login</span>
+          <span class="option-desc">Access faculty portal & courses</span>
+        </button>
+        <button class="option-btn admin-option" onclick="selectRole('admin'); showPanel('panel-login')">
+          <span class="option-icon">🔐</span>
+          <span class="option-text">Admin Login</span>
+          <span class="option-desc">Access admin dashboard</span>
+        </button>
+      </div>
+      <p class="option-hint">Select your account type to continue</p>
+    </div>
+
     <!-- SIGN IN -->
-    <div class="auth-panel active" id="panel-login">
+    <div class="auth-panel" id="panel-login">
       <div class="auth-err" id="loginErr"></div>
       <div class="auth-ok" id="loginOk"></div>
       <div class="lf"><label>Username or Email</label><input type="text" id="loginUser" placeholder="username or email@gmail.com" onkeydown="if(event.key==='Enter')doLogin()"/></div>
@@ -965,7 +983,7 @@
         </div>
         <div class="card">
           <div class="card-hd"><h3>Enrollment Status</h3></div>
-          <p style="padding: 20px; text-align: center; color: var(--text3);">Enrollment management features</p>
+          <div id="admin-enrollment-list"></div>
         </div>
       </div>
 
@@ -993,7 +1011,7 @@
         </div>
         <div class="card">
           <div class="card-hd"><h3>Programs</h3></div>
-          <p style="padding: 20px; text-align: center; color: var(--text3);">Curriculum management features</p>
+          <div id="admin-curriculum-list"></div>
         </div>
       </div>
     </div>
