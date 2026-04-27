@@ -156,9 +156,20 @@ function doLogin(){
   },400);
 }
 
+var selectedRole='faculty';
+
+function selectRole(role){
+  selectedRole=role;
+}
+
 function demoLogin(){
-  document.getElementById('loginUser').value='hfavenir';
-  document.getElementById('loginPass').value='uphsd2026';
+  if(selectedRole==='admin'){
+    document.getElementById('loginUser').value='admin';
+    document.getElementById('loginPass').value='admin123';
+  } else {
+    document.getElementById('loginUser').value='hfavenir';
+    document.getElementById('loginPass').value='uphsd2026';
+  }
   setTimeout(function(){doLogin();},100);
 }
 
@@ -1306,4 +1317,203 @@ function exportStudents(){
   a.download='students_'+new Date().toISOString().slice(0,10)+'.csv';
   a.click();
   toast('✓ Exported '+filtered.length+' student(s) to CSV','ok');
+}
+
+// ================================================================
+// ADMIN FUNCTIONS
+// ================================================================
+function switchAdminPage(page, el){
+  if(el){
+    document.querySelectorAll('.sb-item').forEach(function(item){item.classList.remove('active');});
+    el.classList.add('active');
+  }
+  // Hide only admin pages
+  document.querySelectorAll('[id^="admin-page-"]').forEach(function(p){p.style.display='none';});
+  var targetPage=document.getElementById('admin-page-'+page);
+  if(targetPage) targetPage.style.display='block';
+  
+  switch(page){
+    case 'dashboard': renderAdminDashboard(); break;
+    case 'faculty': renderAdminFaculty(); break;
+    case 'students': renderAdminStudents(); break;
+    case 'enrollment': renderAdminEnrollment(); break;
+    case 'designation': renderAdminDesignation(); break;
+    case 'curriculum': renderAdminCurriculum(); break;
+  }
+}
+
+function renderAdminDashboard(){
+  var totalFaculty=USERS.length;
+  var totalStudents=DB.students.length;
+  var activeCourses=DB.courses.length;
+  var totalStudentEnrollments=0;
+  var totalGrade=0;
+  var gradeCount=0;
+  
+  DB.courses.forEach(function(course){
+    totalStudentEnrollments+=course.students.length;
+    course.students.forEach(function(s){
+      var c=compute(s,course.weeks);
+      totalGrade+=c.grade;
+      gradeCount++;
+    });
+  });
+  
+  var avgRating=gradeCount?Math.round(totalGrade/gradeCount*100)/100:0;
+  
+  var statHtml='';
+  statHtml+='<div class="stat-card"><div class="stat-num">'+totalFaculty+'</div><div class="stat-label">Total Faculty</div><div class="stat-desc">Active faculty members</div></div>';
+  statHtml+='<div class="stat-card"><div class="stat-num">'+totalStudents+'</div><div class="stat-label">Total Students</div><div class="stat-desc">Enrolled students</div></div>';
+  statHtml+='<div class="stat-card"><div class="stat-num">'+activeCourses+'</div><div class="stat-label">Active Courses</div><div class="stat-desc">Running courses</div></div>';
+  statHtml+='<div class="stat-card"><div class="stat-num">'+avgRating+'</div><div class="stat-label">Avg Rating</div><div class="stat-desc">Out of 5.0</div></div>';
+  
+  var dashHtml='<div class="stats-grid">'+statHtml+'</div>';
+  
+  dashHtml+='<div class="card"><div class="card-hd"><h3>Quick Access</h3></div><div class="quick-access">';
+  dashHtml+='<div class="quick-item" onclick="switchAdminPage(\'faculty\', document.querySelectorAll(\'.sb-item\')[1])"><img src="data:image/svg+xml,%3Csvg viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%238b1a2a\' stroke-width=\'2\'%3E%3Ccircle cx=\'12\' cy=\'8\' r=\'4\'/%3E%3Cpath d=\'M6 20c0-4 2.5-6 6-6s6 2 6 6\'/%3E%3C/svg%3E" alt="Faculty" /><h4>Faculty Management</h4><p>Manage '+totalFaculty+' faculty members</p></div>';
+  dashHtml+='<div class="quick-item" onclick="switchAdminPage(\'students\', document.querySelectorAll(\'.sb-item\')[2])"><img src="data:image/svg+xml,%3Csvg viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%238b1a2a\' stroke-width=\'2\'%3E%3Ccircle cx=\'8\' cy=\'7\' r=\'3\'/%3E%3Cpath d=\'M5 21c0-2 1.5-4 3-4s3 2 3 4\'/%3E%3Ccircle cx=\'16\' cy=\'8\' r=\'3\'/%3E%3Cpath d=\'M12 21c0-2 2-4 4-4s4 2 4 4\'/%3E%3C/svg%3E" alt="Students" /><h4>Student Management</h4><p>Manage '+totalStudents+' students</p></div>';
+  dashHtml+='<div class="quick-item" onclick="switchAdminPage(\'enrollment\', document.querySelectorAll(\'.sb-item\')[3])"><img src="data:image/svg+xml,%3Csvg viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%238b1a2a\' stroke-width=\'2\'%3E%3Crect x=\'3\' y=\'3\' width=\'18\' height=\'18\' rx=\'2\'/%3E%3Cpath d=\'M7 10h10M7 14h10M7 18h4\'/%3E%3C/svg%3E" alt="Enrollment" /><h4>Enrollment</h4><p>'+totalStudentEnrollments+' total enrollments</p></div>';
+  dashHtml+='<div class="quick-item" onclick="switchAdminPage(\'designation\', document.querySelectorAll(\'.sb-item\')[4])"><img src="data:image/svg+xml,%3Csvg viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%238b1a2a\' stroke-width=\'2\'%3E%3Ccircle cx=\'12\' cy=\'8\' r=\'3\'/%3E%3Cpath d=\'M5 20c0-3 2-5 7-5s7 2 7 5\'/%3E%3Cpath d=\'M16 11l3 2-3 2\'/%3E%3C/svg%3E" alt="Designation" /><h4>Designation</h4><p>Faculty roles & assignments</p></div>';
+  dashHtml+='</div></div>';
+  
+  dashHtml+='<div class="card"><div class="card-hd"><h3>Recent Activity</h3></div><div class="activity-list">';
+  dashHtml+='<div class="activity-item"><div class="activity-icon">📋</div><div class="activity-info"><strong>System Initialized</strong><p>Admin dashboard ready for operations</p><span class="activity-time">Just now</span></div></div>';
+  dashHtml+='<div class="activity-item"><div class="activity-icon">👥</div><div class="activity-info"><strong>'+totalStudents+' Students</strong><p>Currently enrolled in courses</p><span class="activity-time">S.Y. 2025–2026</span></div></div>';
+  dashHtml+='<div class="activity-item"><div class="activity-icon">📚</div><div class="activity-info"><strong>'+activeCourses+' Active Courses</strong><p>Running this semester</p><span class="activity-time">1st Semester</span></div></div>';
+  dashHtml+='</div></div>';
+  
+  document.getElementById('admin-page-dashboard').innerHTML=dashHtml;
+}
+
+function renderAdminFaculty(){
+  var html='<div class="table-responsive"><table class="admin-table"><thead><tr><th>#</th><th>Name</th><th>Email</th><th>Role</th><th>Department</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+  
+  USERS.forEach(function(f, i){
+    html+='<tr><td>'+(i+1)+'</td>';
+    html+='<td><strong>'+f.name+'</strong></td>';
+    html+='<td><a href="mailto:'+f.email+'" style="color:var(--accent)">'+f.email+'</a></td>';
+    html+='<td><span class="role-badge">'+f.role+'</span></td>';
+    html+='<td>'+f.dept+'</td>';
+    html+='<td><span class="status-badge active">Active</span></td>';
+    html+='<td><div class="td-actions">';
+    html+='<button class="btn btn-sm" onclick="alert(\'View: '+f.name+'\')" title="View">👁</button>';
+    html+='<button class="btn btn-sm" onclick="alert(\'Edit: '+f.name+'\')" title="Edit">✏️</button>';
+    html+='<button class="btn btn-danger btn-sm" onclick="alert(\'Archive: '+f.name+'\')" title="Archive">🗄️</button>';
+    html+='</div></td></tr>';
+  });
+  
+  html+='</tbody></table></div>';
+  
+  document.getElementById('admin-faculty-list').innerHTML=html||'<div class="empty">No faculty members.</div>';
+}
+
+function renderAdminStudents(){
+  var html='<div class="table-responsive"><table class="admin-table"><thead><tr><th>#</th><th>Name</th><th>Student ID</th><th>Email</th><th>Year</th><th>Section</th><th>Courses</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+  
+  DB.students.forEach(function(s, i){
+    var enrolledIn=DB.courses.filter(function(c,idx){return s.courses.indexOf(idx)>-1;}).length;
+    html+='<tr><td>'+(i+1)+'</td>';
+    html+='<td><strong>'+s.ln+', '+s.fn+'</strong> '+s.mi+'</td>';
+    html+='<td style="font-family:\'JetBrains Mono\',monospace;font-size:11px">'+s.sid+'</td>';
+    html+='<td><a href="mailto:'+s.email+'" style="color:var(--accent)">'+s.email+'</a></td>';
+    html+='<td>'+s.year+'</td>';
+    html+='<td>'+s.section+'</td>';
+    html+='<td><span class="badge bg-blue">'+enrolledIn+' courses</span></td>';
+    html+='<td><span class="status-badge active">Active</span></td>';
+    html+='<td><div class="td-actions">';
+    html+='<button class="btn btn-sm" onclick="alert(\'View: '+s.ln+', '+s.fn+'\')" title="View">👁</button>';
+    html+='<button class="btn btn-sm" onclick="alert(\'Edit: '+s.ln+', '+s.fn+'\')" title="Edit">✏️</button>';
+    html+='<button class="btn btn-danger btn-sm" onclick="alert(\'Remove: '+s.ln+', '+s.fn+'\')" title="Remove">✕</button>';
+    html+='</div></td></tr>';
+  });
+  
+  html+='</tbody></table></div>';
+  
+  document.getElementById('admin-students-list').innerHTML=html||'<div class="empty">No students.</div>';
+}
+
+function renderAdminEnrollment(){
+  var html='<div><h4 style="margin:0 0 16px 0">Enrollment by Course</h4>';
+  html+='<div class="enrollment-stats">';
+  
+  DB.courses.forEach(function(c, i){
+    var enroll=c.students.length;
+    var capacity=30;
+    var percent=Math.round(enroll/capacity*100);
+    html+='<div class="enrollment-card">';
+    html+='<div class="enrollment-header"><strong>'+c.code+'</strong><span class="enrollment-count">'+enroll+'/'+capacity+'</span></div>';
+    html+='<div class="enrollment-name">'+c.name+'</div>';
+    html+='<div class="enrollment-bar"><div class="enrollment-fill" style="width:'+percent+'%;background:'+( enroll>=25?'var(--red)':enroll>=15?'var(--amber)':'var(--green)')+'"></div></div>';
+    html+='<div class="enrollment-footer"><span>'+percent+'% Capacity</span><span>Section '+c.section.substring(0,5)+'</span></div>';
+    html+='</div>';
+  });
+  
+  html+='</div>';
+  html+='<div style="margin-top:20px;padding:16px;background:var(--bg2);border-radius:8px;text-align:center;color:var(--text3)">';
+  html+='<strong>Total Enrollments:</strong> '+DB.courses.reduce(function(sum,c){return sum+c.students.length;},0)+'<br>';
+  html+='<strong>Average per Course:</strong> '+Math.round(DB.courses.reduce(function(sum,c){return sum+c.students.length;},0)/DB.courses.length);
+  html+='</div></div>';
+  
+  var el=document.getElementById('admin-enrollment-list');
+  if(el) el.innerHTML=html;
+}
+
+function renderAdminDesignation(){
+  var designations=[
+    {role:'Department Chair',dept:'College of Computer Studies',faculty:3,color:'#8b1a2a'},
+    {role:'Faculty Coordinator',dept:'College of Computer Studies',faculty:2,color:'#c8932a'},
+    {role:'Academic Adviser',dept:'College of Computer Studies',faculty:5,color:'#4a7c59'},
+    {role:'Laboratory Instructor',dept:'College of Computer Studies',faculty:8,color:'#5b9aa0'},
+    {role:'Curriculum Specialist',dept:'College of Computer Studies',faculty:1,color:'#d4a574'}
+  ];
+  
+  var html='<div class="designation-list">';
+  designations.forEach(function(d){
+    html+='<div class="designation-card" style="border-left:4px solid '+d.color+'">';
+    html+='<div class="designation-header">';
+    html+='<h4>'+d.role+'</h4>';
+    html+='<span class="faculty-count">'+d.faculty+' Faculty</span>';
+    html+='</div>';
+    html+='<div class="designation-dept">'+d.dept+'</div>';
+    html+='<div class="designation-actions">';
+    html+='<button class="btn btn-sm" onclick="alert(\'View assignments for '+d.role+'\')" title="View">View</button>';
+    html+='<button class="btn btn-sm" onclick="alert(\'Edit '+d.role+'\')" title="Edit">Edit</button>';
+    html+='</div>';
+    html+='</div>';
+  });
+  html+='</div>';
+  
+  document.getElementById('admin-designation-list').innerHTML=html;
+}
+
+function renderAdminCurriculum(){
+  var programs=[
+    {code:'BSCS',name:'Bachelor of Science in Computer Science',units:120,semesters:8,active:34},
+    {code:'BSIS',name:'Bachelor of Science in Information Systems',units:118,semesters:8,active:28},
+    {code:'BSIT',name:'Bachelor of Science in Information Technology',units:119,semesters:8,active:22}
+  ];
+  
+  var html='<div class="curriculum-list">';
+  programs.forEach(function(p){
+    html+='<div class="curriculum-card">';
+    html+='<div class="curriculum-header">';
+    html+='<h4>'+p.code+' - '+p.name+'</h4>';
+    html+='<span class="active-badge">'+p.active+' Active</span>';
+    html+='</div>';
+    html+='<div class="curriculum-details">';
+    html+='<div class="detail-item"><strong>Total Units:</strong> '+p.units+'</div>';
+    html+='<div class="detail-item"><strong>Semesters:</strong> '+p.semesters+'</div>';
+    html+='<div class="detail-item"><strong>Active Courses:</strong> '+p.active+'</div>';
+    html+='</div>';
+    html+='<div class="curriculum-actions">';
+    html+='<button class="btn btn-sm" onclick="alert(\'View curriculum for '+p.code+'\')" title="View">View</button>';
+    html+='<button class="btn btn-sm" onclick="alert(\'Edit '+p.code+'\')" title="Edit">Edit</button>';
+    html+='<button class="btn btn-sm" onclick="alert(\'Export '+p.code+'\')" title="Export">Export</button>';
+    html+='</div>';
+    html+='</div>';
+  });
+  html+='</div>';
+  
+  var el=document.getElementById('admin-curriculum-list');
+  if(el) el.innerHTML=html;
 }
