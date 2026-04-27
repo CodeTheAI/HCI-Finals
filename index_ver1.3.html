@@ -21,27 +21,66 @@
       <p>S.Y. 2025–2026 &middot; Academic Management System</p>
     </div>
 
-    <!-- SIGN IN -->
-    <div class="auth-panel active" id="panel-login">
+    <!-- LOGIN TYPE SELECTOR -->
+    <div class="auth-panel active" id="panel-login-type">
+      <div style="text-align:center;margin-bottom:24px">
+        <div style="font-size:13px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:16px">Select Account Type</div>
+      </div>
+      <button class="role-btn" onclick="selectRole('faculty')">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="8" r="4"/><path d="M6 20c0-4 2.5-6 6-6s6 2 6 6"/>
+        </svg>
+        <div><strong>Faculty Login</strong><span>Access Faculty Portal</span></div>
+      </button>
+      <button class="role-btn" onclick="selectRole('admin')">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="8" r="4"/><path d="M6 20c0-4 2.5-6 6-6s6 2 6 6"/><path d="M18 3l2.5 2.5M20.5 5.5L18 8"/>
+        </svg>
+        <div><strong>Admin Login</strong><span>Access Admin Portal</span></div>
+      </button>
+    </div>
+
+    <!-- FACULTY SIGN IN -->
+    <div class="auth-panel" id="panel-login-faculty">
+      <div style="text-align:center;margin-bottom:16px">
+        <button class="back-btn" onclick="selectRole(null)">← Back to Selection</button>
+      </div>
       <div class="auth-err" id="loginErr"></div>
       <div class="auth-ok" id="loginOk"></div>
-      <div class="lf"><label>Username or Email</label><input type="text" id="loginUser" placeholder="username or email@gmail.com" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+      <div class="lf"><label>Username or Email</label><input type="text" id="loginUser" placeholder="username or email@gmail.com" onkeydown="if(event.key==='Enter')doLogin('faculty')"/></div>
       <div class="lf">
         <label>Password</label>
         <div class="pw-wrap">
-          <input type="password" id="loginPass" placeholder="Enter your password" onkeydown="if(event.key==='Enter')doLogin()"/>
+          <input type="password" id="loginPass" placeholder="Enter your password" onkeydown="if(event.key==='Enter')doLogin('faculty')"/>
           <button class="pw-toggle" onclick="togglePw('loginPass')" tabindex="-1">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
         </div>
       </div>
-      <div class="forgot-link"><a onclick="showPanel('panel-forgot')">Forgot password?</a></div>
-      <button class="login-btn" id="loginBtn" onclick="doLogin()">Sign In</button>
-      <button class="demo-btn" onclick="demoLogin()">🚀 Demo Login</button>
+      <button class="login-btn" onclick="doLogin('faculty')">Sign In as Faculty</button>
       <div class="auth-divider"><span>DEMO CREDENTIALS</span></div>
       <div class="auth-hint">Username: <strong>hfavenir</strong> &nbsp;·&nbsp; Password: <strong>uphsd2026</strong></div>
-      <div class="auth-hint" style="margin-top:6px">Username: <strong>admin</strong> &nbsp;·&nbsp; Password: <strong>admin123</strong></div>
-      <div class="auth-link" style="margin-top:14px">Don't have an account? <a onclick="showPanel('panel-signup')">Create one</a></div>
+    </div>
+
+    <!-- ADMIN SIGN IN -->
+    <div class="auth-panel" id="panel-login-admin">
+      <div style="text-align:center;margin-bottom:16px">
+        <button class="back-btn" onclick="selectRole(null)">← Back to Selection</button>
+      </div>
+      <div class="auth-err" id="loginErr"></div>
+      <div class="lf"><label>Username</label><input type="text" id="adminUser" placeholder="admin username" onkeydown="if(event.key==='Enter')doLogin('admin')"/></div>
+      <div class="lf">
+        <label>Password</label>
+        <div class="pw-wrap">
+          <input type="password" id="adminPass" placeholder="Enter password" onkeydown="if(event.key==='Enter')doLogin('admin')"/>
+          <button class="pw-toggle" onclick="togglePw('adminPass')" tabindex="-1">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+      <button class="login-btn" onclick="doLogin('admin')">Sign In as Administrator</button>
+      <div class="auth-divider"><span>DEMO CREDENTIALS</span></div>
+      <div class="auth-hint">Username: <strong>admin</strong> &nbsp;·&nbsp; Password: <strong>admin123</strong></div>
     </div>
 
     <!-- SIGN UP -->
@@ -1171,6 +1210,283 @@
 </div>
 
 <div class="toasts" id="toasts"></div>
+
+<!-- ============================================================ ADMIN PORTAL APP SHELL ============================================================ -->
+<div class="app app-hidden" id="adminAppShell">
+  <!-- Sidebar -->
+  <div class="sidebar" style="background:var(--surface1)">
+    <div class="sb-header" style="padding:16px;border-bottom:1px solid var(--text3)">
+      <div style="text-align:center;margin-bottom:12px">
+        <span style="background:var(--maroon);color:white;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700">● ADMINISTRATOR</span>
+      </div>
+      <div class="sb-av" style="background:linear-gradient(135deg,var(--maroon),var(--gold));margin:0 auto;width:48px;height:48px">
+        <span id="admin-sb-av-initials" style="font-size:18px">AD</span>
+      </div>
+      <div class="sb-info" style="text-align:center;margin-top:12px">
+        <div class="sb-name" id="admin-sb-name" style="font-weight:700">Administrator</div>
+        <div class="sb-role" id="admin-sb-role" style="font-size:12px;color:var(--text3)">System Admin</div>
+      </div>
+    </div>
+
+    <!-- Sidebar Sections -->
+    <div style="padding:16px;border-bottom:1px solid var(--text3)">
+      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:12px;letter-spacing:.5px">OVERVIEW</div>
+      <button class="sb-nav-item active" onclick="showAdminPage('dashboard')" id="admin-nav-dashboard" style="width:100%;text-align:left;padding:10px 12px;margin-bottom:6px;border-radius:6px;background:none;border:none;cursor:pointer;color:var(--text);font-size:14px;transition:all .2s">📊 Dashboard</button>
+    </div>
+
+    <div style="padding:16px;border-bottom:1px solid var(--text3)">
+      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:12px;letter-spacing:.5px">PEOPLE</div>
+      <button class="sb-nav-item" onclick="showAdminPage('faculty')" id="admin-nav-faculty" style="width:100%;text-align:left;padding:10px 12px;margin-bottom:6px;border-radius:6px;background:none;border:none;cursor:pointer;color:var(--text);font-size:14px;transition:all .2s">👨‍🏫 Faculty</button>
+      <button class="sb-nav-item" onclick="showAdminPage('students')" id="admin-nav-students" style="width:100%;text-align:left;padding:10px 12px;margin-bottom:6px;border-radius:6px;background:none;border:none;cursor:pointer;color:var(--text);font-size:14px;transition:all .2s">👥 Students</button>
+    </div>
+
+    <div style="padding:16px;border-bottom:1px solid var(--text3)">
+      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:12px;letter-spacing:.5px">ACADEMIC</div>
+      <button class="sb-nav-item" onclick="showAdminPage('enrollment')" id="admin-nav-enrollment" style="width:100%;text-align:left;padding:10px 12px;margin-bottom:6px;border-radius:6px;background:none;border:none;cursor:pointer;color:var(--text);font-size:14px;transition:all .2s">📝 Enrollment</button>
+      <button class="sb-nav-item" onclick="showAdminPage('designation')" id="admin-nav-designation" style="width:100%;text-align:left;padding:10px 12px;margin-bottom:6px;border-radius:6px;background:none;border:none;cursor:pointer;color:var(--text);font-size:14px;transition:all .2s">🎓 Designation</button>
+      <button class="sb-nav-item" onclick="showAdminPage('curriculum')" id="admin-nav-curriculum" style="width:100%;text-align:left;padding:10px 12px;margin-bottom:6px;border-radius:6px;background:none;border:none;cursor:pointer;color:var(--text);font-size:14px;transition:all .2s">📚 Curriculum</button>
+    </div>
+
+    <div style="padding:16px;border-bottom:1px solid var(--text3)">
+      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:12px;letter-spacing:.5px">REPORTS</div>
+      <button class="sb-nav-item" onclick="showAdminPage('reports')" id="admin-nav-reports" style="width:100%;text-align:left;padding:10px 12px;margin-bottom:6px;border-radius:6px;background:none;border:none;cursor:pointer;color:var(--text);font-size:14px;transition:all .2s">📊 Reports & Logs</button>
+    </div>
+
+    <div style="padding:16px;margin-top:auto">
+      <button class="sb-btn" onclick="doLogout()" style="width:100%;padding:10px;background:var(--maroon);color:white;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-size:14px">🚪 Sign Out</button>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main">
+    <div class="content">
+      <!-- Dashboard Page -->
+      <div class="page" id="admin-dashboard" style="display:block">
+        <div style="margin-bottom:32px">
+          <h1 style="font-size:32px;margin:0 0 8px 0">Welcome back, Admin 👋</h1>
+          <p style="color:var(--text2);font-size:15px;margin:0">Here's an overview of your academic management system</p>
+        </div>
+
+        <!-- Stats Cards -->
+        <div id="admin-dash-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:32px"></div>
+
+        <!-- Module Cards -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:20px">
+          <div class="admin-module-card" onclick="showAdminPage('faculty')" style="background:var(--surface1);border:1px solid var(--text3);border-radius:12px;padding:24px;cursor:pointer;transition:all .3s;border-top:4px solid var(--maroon)">
+            <div style="font-size:40px;margin-bottom:12px">📋</div>
+            <h3 style="margin:0 0 8px 0;font-size:16px;font-weight:700">Faculty Module</h3>
+            <p style="color:var(--text2);font-size:13px;margin:0 0 16px 0">View and manage all teaching staff records, assignments, and profiles</p>
+            <div style="font-size:24px;font-weight:700;color:var(--maroon)" id="admin-card-faculty">5</div>
+          </div>
+
+          <div class="admin-module-card" onclick="showAdminPage('students')" style="background:var(--surface1);border:1px solid var(--text3);border-radius:12px;padding:24px;cursor:pointer;transition:all .3s;border-top:4px solid var(--blue)">
+            <div style="font-size:40px;margin-bottom:12px">👥</div>
+            <h3 style="margin:0 0 8px 0;font-size:16px;font-weight:700">Student Module</h3>
+            <p style="color:var(--text2);font-size:13px;margin:0 0 16px 0">Oversee student records, enrollments, sections, and academic standing</p>
+            <div style="font-size:24px;font-weight:700;color:var(--blue)" id="admin-card-students">5</div>
+          </div>
+
+          <div class="admin-module-card" onclick="showAdminPage('enrollment')" style="background:var(--surface1);border:1px solid var(--text3);border-radius:12px;padding:24px;cursor:pointer;transition:all .3s;border-top:4px solid var(--green)">
+            <div style="font-size:40px;margin-bottom:12px">✏️</div>
+            <h3 style="margin:0 0 8px 0;font-size:16px;font-weight:700">Enrollment</h3>
+            <p style="color:var(--text2);font-size:13px;margin:0 0 16px 0">Manage student registration by section, assign subjects per course block</p>
+            <div style="font-size:24px;font-weight:700;color:var(--green)" id="admin-card-enrollment">5</div>
+          </div>
+
+          <div class="admin-module-card" onclick="showAdminPage('designation')" style="background:var(--surface1);border:1px solid var(--text3);border-radius:12px;padding:24px;cursor:pointer;transition:all .3s;border-top:4px solid var(--accent)">
+            <div style="font-size:40px;margin-bottom:12px">👔</div>
+            <h3 style="margin:0 0 8px 0;font-size:16px;font-weight:700">Designation</h3>
+            <p style="color:var(--text2);font-size:13px;margin:0 0 16px 0">Assign professors to specific subjects and lectures per department</p>
+            <div style="font-size:24px;font-weight:700;color:var(--accent)" id="admin-card-designation">5</div>
+          </div>
+
+          <div class="admin-module-card" onclick="showAdminPage('curriculum')" style="background:var(--surface1);border:1px solid var(--text3);border-radius:12px;padding:24px;cursor:pointer;transition:all .3s;border-top:4px solid var(--gold)">
+            <div style="font-size:40px;margin-bottom:12px">📚</div>
+            <h3 style="margin:0 0 8px 0;font-size:16px;font-weight:700">Curriculum</h3>
+            <p style="color:var(--text2);font-size:13px;margin:0 0 16px 0">Full control over course offerings — add, modify, or drop subjects</p>
+            <div style="font-size:24px;font-weight:700;color:var(--gold)" id="admin-card-curriculum">15</div>
+          </div>
+
+          <div class="admin-module-card" onclick="showAdminPage('reports')" style="background:var(--surface1);border:1px solid var(--text3);border-radius:12px;padding:24px;cursor:pointer;transition:all .3s;border-top:4px solid var(--cyan)">
+            <div style="font-size:40px;margin-bottom:12px">📊</div>
+            <h3 style="margin:0 0 8px 0;font-size:16px;font-weight:700">Reports & Logs</h3>
+            <p style="color:var(--text2);font-size:13px;margin:0 0 16px 0">View activity logs, generate reports, and audit system records</p>
+            <div style="font-size:24px;font-weight:700;color:var(--cyan)" id="admin-card-reports">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Faculty Page -->
+      <div class="page" id="admin-faculty" style="display:none">
+        <div class="page-header"><h1>👨‍🏫 Faculty Management</h1></div>
+        <div style="background:var(--surface1);border-radius:12px;padding:16px">
+          <p>Faculty members: <strong id="admin-faculty-count">0</strong></p>
+          <table style="width:100%;border-collapse:collapse;margin-top:12px">
+            <thead><tr style="background:var(--surface2)">
+              <th style="padding:12px;text-align:left;font-size:13px;font-weight:700">Name</th>
+              <th style="padding:12px;text-align:left;font-size:13px;font-weight:700">Email</th>
+              <th style="padding:12px;text-align:left;font-size:13px;font-weight:700">Department</th>
+              <th style="padding:12px;text-align:left;font-size:13px;font-weight:700">Actions</th>
+            </tr></thead>
+            <tbody id="admin-faculty-table"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Students Page -->
+      <div class="page" id="admin-students" style="display:none">
+        <div class="page-header"><h1>👥 Students</h1></div>
+        <div style="background:var(--surface1);border-radius:12px;padding:16px">
+          <p>Total Students: <strong id="admin-students-count">0</strong></p>
+          <input type="text" placeholder="Search students..." id="admin-stud-search" style="width:100%;padding:10px;border:1px solid var(--text3);border-radius:6px;margin-bottom:12px;margin-top:12px;font-size:14px"/>
+          <table style="width:100%;border-collapse:collapse;margin-top:12px">
+            <thead><tr style="background:var(--surface2)">
+              <th style="padding:12px;text-align:left;font-size:13px;font-weight:700">#</th>
+              <th style="padding:12px;text-align:left;font-size:13px;font-weight:700">Student ID</th>
+              <th style="padding:12px;text-align:left;font-size:13px;font-weight:700">Name</th>
+              <th style="padding:12px;text-align:left;font-size:13px;font-weight:700">Email</th>
+              <th style="padding:12px;text-align:left;font-size:13px;font-weight:700">Year</th>
+              <th style="padding:12px;text-align:left;font-size:13px;font-weight:700">Section</th>
+            </tr></thead>
+            <tbody id="admin-students-table"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Enrollment Page -->
+      <div class="page" id="admin-enrollment" style="display:none">
+        <div class="page-header">
+          <h1>📝 Enrollment Management</h1>
+          <p>Manage student registration and section assignments</p>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+          <div style="background:var(--surface2);padding:16px;border-radius:8px;border-left:4px solid var(--green)">
+            <div style="font-size:11px;text-transform:uppercase;color:var(--text3);font-weight:700">Total Enrolled</div>
+            <div style="font-size:28px;font-weight:700;margin:8px 0" id="admin-enroll-total">5</div>
+            <div style="font-size:12px;color:var(--text3)">Students across all sections</div>
+          </div>
+          <div style="background:var(--surface2);padding:16px;border-radius:8px;border-left:4px solid var(--blue)">
+            <div style="font-size:11px;text-transform:uppercase;color:var(--text3);font-weight:700">Active Sections</div>
+            <div style="font-size:28px;font-weight:700;margin:8px 0" id="admin-enroll-sections">2</div>
+            <div style="font-size:12px;color:var(--text3)">Currently offering classes</div>
+          </div>
+        </div>
+        <div style="background:var(--surface1);border-radius:12px;padding:20px">
+          <h3 style="margin:0 0 16px 0;font-size:16px;font-weight:700">📋 Enrollment by Section</h3>
+          <table style="width:100%;border-collapse:collapse">
+            <thead><tr style="background:var(--surface2);border-bottom:2px solid var(--text3)">
+              <th style="padding:12px;text-align:left;font-size:12px;font-weight:700">Section</th>
+              <th style="padding:12px;text-align:left;font-size:12px;font-weight:700">Enrolled</th>
+              <th style="padding:12px;text-align:left;font-size:12px;font-weight:700">Course</th>
+              <th style="padding:12px;text-align:left;font-size:12px;font-weight:700">Status</th>
+            </tr></thead>
+            <tbody id="admin-enrollment-table"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Designation Page -->
+      <div class="page" id="admin-designation" style="display:none">
+        <div class="page-header">
+          <h1>👔 Faculty Designation</h1>
+          <p>Assign and manage faculty teaching assignments</p>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+          <div style="background:var(--surface2);padding:16px;border-radius:8px;border-left:4px solid var(--maroon)">
+            <div style="font-size:11px;text-transform:uppercase;color:var(--text3);font-weight:700">Total Faculty</div>
+            <div style="font-size:28px;font-weight:700;margin:8px 0" id="admin-desig-faculty">5</div>
+            <div style="font-size:12px;color:var(--text3)">On staff this semester</div>
+          </div>
+          <div style="background:var(--surface2);padding:16px;border-radius:8px;border-left:4px solid var(--accent)">
+            <div style="font-size:11px;text-transform:uppercase;color:var(--text3);font-weight:700">Assignments</div>
+            <div style="font-size:28px;font-weight:700;margin:8px 0" id="admin-desig-assignments">5</div>
+            <div style="font-size:12px;color:var(--text3)">Active course assignments</div>
+          </div>
+        </div>
+        <div style="background:var(--surface1);border-radius:12px;padding:20px">
+          <h3 style="margin:0 0 16px 0;font-size:16px;font-weight:700">👨‍🏫 Faculty Assignments</h3>
+          <table style="width:100%;border-collapse:collapse">
+            <thead><tr style="background:var(--surface2);border-bottom:2px solid var(--text3)">
+              <th style="padding:12px;text-align:left;font-size:12px;font-weight:700">Faculty Name</th>
+              <th style="padding:12px;text-align:left;font-size:12px;font-weight:700">Course Code</th>
+              <th style="padding:12px;text-align:left;font-size:12px;font-weight:700">Course Name</th>
+              <th style="padding:12px;text-align:left;font-size:12px;font-weight:700">Section</th>
+              <th style="padding:12px;text-align:left;font-size:12px;font-weight:700">Status</th>
+            </tr></thead>
+            <tbody id="admin-designation-table"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Curriculum Page -->
+      <div class="page" id="admin-curriculum" style="display:none">
+        <div class="page-header">
+          <h1>📚 Curriculum Management</h1>
+          <p>Manage courses, programs, and academic offerings</p>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-bottom:20px">
+          <div style="background:var(--surface2);padding:16px;border-radius:8px;border-left:4px solid var(--gold)">
+            <div style="font-size:11px;text-transform:uppercase;color:var(--text3);font-weight:700">Courses</div>
+            <div style="font-size:28px;font-weight:700;margin:8px 0" id="admin-curr-courses">0</div>
+            <div style="font-size:12px;color:var(--text3)">In this semester</div>
+          </div>
+          <div style="background:var(--surface2);padding:16px;border-radius:8px;border-left:4px solid var(--blue)">
+            <div style="font-size:11px;text-transform:uppercase;color:var(--text3);font-weight:700">Total Units</div>
+            <div style="font-size:28px;font-weight:700;margin:8px 0" id="admin-curr-units">0</div>
+            <div style="font-size:12px;color:var(--text3)">Across all courses</div>
+          </div>
+          <div style="background:var(--surface2);padding:16px;border-radius:8px;border-left:4px solid var(--green)">
+            <div style="font-size:11px;text-transform:uppercase;color:var(--text3);font-weight:700">Programs</div>
+            <div style="font-size:28px;font-weight:700;margin:8px 0">1</div>
+            <div style="font-size:12px;color:var(--text3)">BSCS</div>
+          </div>
+        </div>
+        <div style="background:var(--surface1);border-radius:12px;padding:20px">
+          <h3 style="margin:0 0 16px 0;font-size:16px;font-weight:700">📖 Course Offerings</h3>
+          <table style="width:100%;border-collapse:collapse">
+            <thead><tr style="background:var(--surface2);border-bottom:2px solid var(--text3)">
+              <th style="padding:12px;text-align:left;font-size:12px;font-weight:700">Course Code</th>
+              <th style="padding:12px;text-align:left;font-size:12px;font-weight:700">Course Name</th>
+              <th style="padding:12px;text-align:left;font-size:12px;font-weight:700">Units</th>
+              <th style="padding:12px;text-align:left;font-size:12px;font-weight:700">Sections</th>
+              <th style="padding:12px;text-align:left;font-size:12px;font-weight:700">Enrollment</th>
+            </tr></thead>
+            <tbody id="admin-curriculum-table"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Reports Page -->
+      <div class="page" id="admin-reports" style="display:none">
+        <div class="page-header">
+          <h1>📊 Reports & Activity Logs</h1>
+          <p>System activity, audit logs, and academic reports</p>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-bottom:20px">
+          <div style="background:var(--surface2);padding:16px;border-radius:8px;border-left:4px solid var(--cyan)">
+            <div style="font-size:11px;text-transform:uppercase;color:var(--text3);font-weight:700">System Logins</div>
+            <div style="font-size:28px;font-weight:700;margin:8px 0">12</div>
+            <div style="font-size:12px;color:var(--text3)">Last 30 days</div>
+          </div>
+          <div style="background:var(--surface2);padding:16px;border-radius:8px;border-left:4px solid var(--accent)">
+            <div style="font-size:11px;text-transform:uppercase;color:var(--text3);font-weight:700">Records Updated</div>
+            <div style="font-size:28px;font-weight:700;margin:8px 0">24</div>
+            <div style="font-size:12px;color:var(--text3)">This month</div>
+          </div>
+          <div style="background:var(--surface2);padding:16px;border-radius:8px;border-left:4px solid var(--green)">
+            <div style="font-size:11px;text-transform:uppercase;color:var(--text3);font-weight:700">Data Exports</div>
+            <div style="font-size:28px;font-weight:700;margin:8px 0">3</div>
+            <div style="font-size:12px;color:var(--text3)">Generated reports</div>
+          </div>
+        </div>
+        <div style="background:var(--surface1);border-radius:12px;padding:20px">
+          <h3 style="margin:0 0 16px 0;font-size:16px;font-weight:700">📝 Recent Activity Log</h3>
+          <div id="admin-activity-log" style="max-height:400px;overflow-y:auto"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script>
 // ================================================================
